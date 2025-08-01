@@ -1,0 +1,232 @@
+import { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { getMyPage, updateMyPage } from "../../../api/memberApi";
+import ResultModal from "../../common/ResultModal";
+import MyPageInfo from "./MyPageInfo";
+import MyPageEdit from "./MyPageEdit";
+
+const MyPageForm = () => {
+  const loginState = useSelector((state) => state.loginSlice);
+  const navigate = useNavigate();
+
+  const [memberData, setMemberData] = useState({
+    memberNo: "",
+    email: "",
+    nickname: "",
+    phone: "",
+    postalCode: "",
+    detailAddress: "",
+    joinedDate: "",
+  });
+
+  const [editData, setEditData] = useState({
+    email: "",
+    pw: "",
+    pwConfirm: "",
+    nickname: "",
+    phone: "",
+    postalCode: "",
+    detailAddress: "",
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [nicknameCheck, setNicknameCheck] = useState({
+    checked: false,
+    available: false,
+    message: "",
+  });
+
+  // 페이지 로드 시 회원 정보 조회
+  const fetchMemberData = useCallback(async () => {
+    try {
+      const data = await getMyPage(loginState.email);
+      setMemberData(data);
+      setEditData({
+        email: data.email,
+        pw: "",
+        pwConfirm: "",
+        nickname: data.nickname,
+        phone: data.phone || "",
+        postalCode: data.postalCode || "",
+        detailAddress: data.detailAddress || "",
+      });
+    } catch (error) {
+      console.error("회원 정보 조회 오류:", error);
+      alert("회원 정보를 불러오는 중 오류가 발생했습니다.");
+    }
+  }, [loginState.email]);
+
+  useEffect(() => {
+    const checkLoginAndFetchData = async () => {
+      if (loginState.email) {
+        await fetchMemberData();
+        setIsLoading(false);
+      } else {
+        // 로그인되지 않은 경우 alert 후 로그인 페이지로 이동
+        setIsLoading(false);
+        alert("마이페이지를 이용하려면 로그인해주세요.");
+        navigate("/member/login");
+      }
+    };
+
+    checkLoginAndFetchData();
+  }, [loginState.email, fetchMemberData, navigate]);
+
+  const handleEditModeToggle = () => {
+    if (isEditing) {
+      // 편집 취소 시 원래 데이터로 복원
+      setEditData({
+        email: memberData.email,
+        pw: "",
+        pwConfirm: "",
+        nickname: memberData.nickname,
+        phone: memberData.phone || "",
+        postalCode: memberData.postalCode || "",
+        detailAddress: memberData.detailAddress || "",
+      });
+      setNicknameCheck({
+        checked: false,
+        available: false,
+        message: "",
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleChange = (e) => {
+    setEditData({
+      ...editData,
+      [e.target.name]: e.target.value,
+    });
+
+    // 닉네임이 변경되면 중복확인 상태 리셋
+    if (e.target.name === "nickname") {
+      setNicknameCheck({
+        checked: false,
+        available: false,
+        message: "",
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // 비밀번호 입력이 있을 때만 검증
+      if (editData.pw) {
+        if (editData.pw.length < 6) {
+          alert("비밀번호는 6자리 이상 입력해주세요.");
+          return;
+        }
+        if (editData.pw !== editData.pwConfirm) {
+          alert("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+          return;
+        }
+      }
+
+      // 닉네임이 변경되었다면 중복확인 체크
+      if (editData.nickname !== memberData.nickname) {
+        if (!nicknameCheck.checked) {
+          alert("닉네임 중복확인을 해주세요.");
+          return;
+        }
+        if (!nicknameCheck.available) {
+          alert("사용할 수 없는 닉네임입니다. 다른 닉네임을 선택해주세요.");
+          return;
+        }
+      }
+
+      // 서버에 전송할 데이터 준비 (빈 값이 아닌 것만)
+      const updateData = {
+        email: editData.email,
+      };
+
+      if (editData.pw) {
+        updateData.pw = editData.pw;
+      }
+      if (editData.nickname !== memberData.nickname) {
+        updateData.nickname = editData.nickname;
+      }
+      if (editData.phone !== memberData.phone) {
+        updateData.phone = editData.phone;
+      }
+      if (editData.postalCode !== memberData.postalCode) {
+        updateData.postalCode = editData.postalCode;
+      }
+      if (editData.detailAddress !== memberData.detailAddress) {
+        updateData.detailAddress = editData.detailAddress;
+      }
+
+      await updateMyPage(updateData);
+      setResult("회원 정보가 수정되었습니다!");
+      setIsEditing(false);
+
+      // 최신 정보 다시 조회
+      await fetchMemberData();
+    } catch (error) {
+      console.error("회원 정보 수정 오류:", error);
+      if (error.response?.data?.message) {
+        alert(`수정 오류: ${error.response.data.message}`);
+      } else {
+        alert("회원 정보 수정 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
+  const closeModal = () => {
+    setResult(null);
+  };
+
+  // 로딩 중이거나 로그인 상태가 확인되지 않은 경우
+  if (isLoading || loginState.email === undefined) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 로그인되지 않은 경우 빈 화면 (useEffect에서 처리)
+  if (!loginState.email) {
+    return null;
+  }
+  return (
+    <div className="border-2 border-sky-200 mt-4 mb-8 p-4 rounded-lg shadow-lg bg-white max-w-[1200px] mx-auto">
+      {result && (
+        <ResultModal
+          title={"정보 수정 결과"}
+          content={result}
+          callbackFn={closeModal}
+        />
+      )}
+
+      <div className="flex justify-center">
+        <div className="text-4xl m-4 p-4 font-extrabold text-blue-500">
+          마이페이지
+        </div>
+      </div>
+
+      {isEditing ? (
+        <MyPageEdit
+          editData={editData}
+          memberData={memberData}
+          nicknameCheck={nicknameCheck}
+          setNicknameCheck={setNicknameCheck}
+          onChange={handleChange}
+          setEditData={setEditData}
+          onSave={handleSave}
+          onCancel={handleEditModeToggle}
+        />
+      ) : (
+        <MyPageInfo
+          memberData={memberData}
+          onEditClick={handleEditModeToggle}
+        />
+      )}
+    </div>
+  );
+};
+
+export default MyPageForm;
