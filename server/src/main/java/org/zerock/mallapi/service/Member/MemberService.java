@@ -24,10 +24,11 @@ public interface MemberService {
     boolean isEmailDuplicate(String email);
     
     // 닉네임 중복 체크
-    boolean isNicknameDuplicate(String nickname);
-
-    // 이메일로 회원 정보 조회
+    boolean isNicknameDuplicate(String nickname);    // 이메일로 회원 정보 조회
     MemberDTO getMemberByEmail(String email);
+    
+    // 회원탈퇴
+    void withdrawMember(String email);
     
     //회원 정보는 MemberDTO 타입으로 처리되어야 하므로 Member 엔티티 객체를 MemberDTO 객체로 변환
     default MemberDTO entityToDTO(Member member){

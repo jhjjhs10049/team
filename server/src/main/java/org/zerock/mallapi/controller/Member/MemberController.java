@@ -77,9 +77,7 @@ public class MemberController {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원 정보 조회 중 오류가 발생했습니다."));
         }
-    }
-
-    // 마이페이지 - 회원 정보 수정
+    }    // 마이페이지 - 회원 정보 수정
     @PutMapping("/mypage")
     public ResponseEntity<?> updateMyPage(@RequestBody MemberModifyDTO memberModifyDTO) {
         try {
@@ -97,6 +95,27 @@ public class MemberController {
             log.error("MyPage update error: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원 정보 수정 중 오류가 발생했습니다."));
+        }
+    }
+
+    // 회원탈퇴
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<?> withdrawMember(@RequestParam String email) {
+        try {
+            log.info("Member withdraw request: " + email);
+            
+            memberService.withdrawMember(email);
+            
+            return ResponseEntity.ok(Map.of("message", "회원탈퇴가 완료되었습니다."));
+
+        } catch (RuntimeException e) {
+            log.error("Member withdraw error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Member withdraw error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "회원탈퇴 중 오류가 발생했습니다."));
         }
     }
 }

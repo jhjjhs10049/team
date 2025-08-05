@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getMyPage, updateMyPage } from "../../../api/memberApi";
+import {
+  getMyPage,
+  updateMyPage,
+  withdrawMember,
+} from "../../../api/memberApi";
+import { logout } from "../../../slices/loginSlice";
 import ResultModal from "../../common/ResultModal";
 import MyPageInfo from "./MyPageInfo";
 import MyPageEdit from "./MyPageEdit";
+import WithdrawModal from "./WithdrawModal";
 
 const MyPageForm = () => {
   const loginState = useSelector((state) => state.loginSlice);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [memberData, setMemberData] = useState({
@@ -29,10 +36,10 @@ const MyPageForm = () => {
     postalCode: "",
     detailAddress: "",
   });
-
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [result, setResult] = useState(null);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [nicknameCheck, setNicknameCheck] = useState({
     checked: false,
     available: false,
@@ -174,9 +181,44 @@ const MyPageForm = () => {
       }
     }
   };
-
   const closeModal = () => {
     setResult(null);
+  };
+
+  // 회원탈퇴 모달 열기
+  const handleWithdrawClick = () => {
+    setIsWithdrawModalOpen(true);
+  };
+
+  // 회원탈퇴 모달 닫기
+  const handleWithdrawModalClose = () => {
+    setIsWithdrawModalOpen(false);
+  };
+  // 회원탈퇴 실행
+  const handleWithdrawConfirm = async () => {
+    try {
+      // 소셜 로그인 사용자 체크
+      if (memberData.social) {
+        alert("소셜 로그인 회원은 회원탈퇴를 할 수 없습니다.");
+        return;
+      }
+
+      await withdrawMember(loginState.email);
+      alert("회원탈퇴가 완료되었습니다.");
+
+      // 로그아웃 처리
+      dispatch(logout());
+
+      // 로그인 페이지로 이동
+      navigate("/member/login");
+    } catch (error) {
+      console.error("회원탈퇴 오류:", error);
+      if (error.response?.data?.message) {
+        alert(`탈퇴 오류: ${error.response.data.message}`);
+      } else {
+        alert("회원탈퇴 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   // 로딩 중이거나 로그인 상태가 확인되지 않은 경우
@@ -201,13 +243,11 @@ const MyPageForm = () => {
           callbackFn={closeModal}
         />
       )}
-
       <div className="flex justify-center">
         <div className="text-4xl m-4 p-4 font-extrabold text-blue-500">
           마이페이지
         </div>
-      </div>
-
+      </div>{" "}
       {isEditing ? (
         <MyPageEdit
           editData={editData}
@@ -223,8 +263,16 @@ const MyPageForm = () => {
         <MyPageInfo
           memberData={memberData}
           onEditClick={handleEditModeToggle}
+          onWithdrawClick={handleWithdrawClick}
         />
       )}
+      {/* 회원탈퇴 모달 */}
+      <WithdrawModal
+        isOpen={isWithdrawModalOpen}
+        onClose={handleWithdrawModalClose}
+        onConfirm={handleWithdrawConfirm}
+        memberEmail={memberData.email}
+      />
     </div>
   );
 };

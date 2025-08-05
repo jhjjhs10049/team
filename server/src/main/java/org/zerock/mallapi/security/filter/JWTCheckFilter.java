@@ -41,22 +41,8 @@ public class JWTCheckFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        log.info("check uri.........." + path);
-
-        // api/member/ 경로의 호출은 체크하지 않음
+        log.info("check uri.........." + path);        // api/member/ 경로의 호출은 체크하지 않음
         if(path.startsWith("/api/member/")){
-            return true;
-        }
-
-        // Todo와 Products의 GET 요청(조회)은 로그인 없이 허용
-        if(request.getMethod().equals("GET")) {
-            if(path.startsWith("/api/todo/") || path.startsWith("/api/products/")) {
-                return true;
-            }
-        }
-
-        //이미지 조회 경로는 체크하지 않는다
-        if(path.startsWith("/api/products/view/")){
             return true;
         }
 

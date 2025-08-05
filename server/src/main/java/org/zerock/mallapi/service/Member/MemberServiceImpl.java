@@ -220,8 +220,7 @@ public class MemberServiceImpl implements MemberService{
         }
 
         memberRepository.save(member); // 회원 정보 수정
-    }    
-    @Override
+    }      @Override
     public MemberDTO getMemberByEmail(String email) {
         Optional<Member> result = memberRepository.findByEmailAndActiveStatus(email);
         
@@ -229,5 +228,26 @@ public class MemberServiceImpl implements MemberService{
             new RuntimeException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
         
         return entityToDTO(member);
+    }
+      @Override
+    public void withdrawMember(String email) {
+        log.info("회원탈퇴 요청: " + email);
+        
+        Optional<Member> result = memberRepository.findByEmailAndActiveStatus(email);
+        
+        Member member = result.orElseThrow(() -> 
+            new RuntimeException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
+        
+        // 소셜 로그인 사용자는 탈퇴할 수 없음
+        if (member.getSocial() != null && member.getSocial()) {
+            throw new RuntimeException("소셜 로그인 회원은 회원탈퇴를 할 수 없습니다.");
+        }
+        
+        // active 상태를 DELETED로 변경 (소프트 삭제)
+        member.changeActive(MemberStatus.DELETED);
+        
+        memberRepository.save(member);
+        
+        log.info("회원탈퇴 완료: " + email);
     }
 }

@@ -31,3 +31,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         return getWithRoles(email, MemberStatus.ACTIVE).orElse(null);
     }
 }
+ 

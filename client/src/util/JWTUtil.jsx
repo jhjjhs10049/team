@@ -9,11 +9,10 @@ import { API_SERVER_HOST } from "../api/apiConfig";
  *****************************************************************************************************/
 
 /***************************************************************************************************************
- * todoApi.jsx 와 productApi.jsx 에  getOne , getList 함수가 있다
- * 공통점은 두 함수 모두 axios 가 아닌 jwtAxios 를 사용 한다는 점이다.
- * jwtAxios 는 axios 에 토큰 처리 기능이 추가되었다라고 생각 하면된다.
+ * API 호출에서 JWT 토큰을 처리하는 유틸리티
+ * jwtAxios는 axios에 토큰 처리 기능이 추가된 인스턴스입니다.
  * 코드의 흐름을 살펴보자.
- * getOne() 혹은 getList 가 호출 되었을때 jwtAxios.get 을 바로 실행하는게 아니라 인터셉터가 먼저 실행된다.
+ * API 함수가 호출되었을 때 jwtAxios.get을 바로 실행하는게 아니라 인터셉터가 먼저 실행된다.
  * jwtAxios.interceptors.request.use( beforeReq, requestFail) 가 먼저 실행 되는 것이다.
  * 매개변수인 beforeReq , requestFail 함수가 호출된다.
  * 그런데 requestFail 는 오류가 발생 했을때만 호출된다.
