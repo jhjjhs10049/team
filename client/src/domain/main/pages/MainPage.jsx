@@ -1,0 +1,20 @@
+import BasicLayout from "../../../layouts/BasicLayout";
+
+const MainPage = () => {
+  return (
+    <BasicLayout>
+      {/* 기능 소개 섹션 */}
+      <div className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:text-center">
+            <h2 className="text-base text-black-600 font-semibold tracking-wide uppercase">
+              메인페이지 테스트
+            </h2>
+          </div>
+        </div>
+      </div>
+    </BasicLayout>
+  );
+};
+
+export default MainPage;

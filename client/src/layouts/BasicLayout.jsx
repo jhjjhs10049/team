@@ -1,5 +1,5 @@
-import BasicMenu from "../components/menus/BasicMenu.jsx";
-import Footer from "../components/menus/Footer.jsx";
+import BasicMenu from "../common/menus/Header.jsx";
+import Footer from "../common/menus/Footer.jsx";
 
 const BasicLayout = ({ children }) => {
   return (

@@ -1,10 +1,14 @@
 import { lazy, Suspense } from "react";
 const Loading = <div>Loading....</div>;
-const Login = lazy(() => import("../pages/member/LoginPage"));
-const Join = lazy(() => import("../pages/member/JoinPage"));
-const KakaoRedirect = lazy(() => import("../pages/member/KakaoRedirectPage"));
-const MemberModify = lazy(() => import("../pages/member/ModifyPage"));
-const MyPage = lazy(() => import("../pages/member/MyPage"));
+const Login = lazy(() => import("../domain/member/login/pages/LoginPage"));
+const Join = lazy(() => import("../domain/member/join/pages/JoinPage"));
+const KakaoRedirect = lazy(() =>
+  import("../domain/member/login/pages/KakaoRedirectPage")
+);
+const MemberModify = lazy(() =>
+  import("../domain/member/mypage/pages/ModifyPage")
+);
+const MyPage = lazy(() => import("../domain/member/mypage/pages/MyPage"));
 
 const memberRouter = () => {
   return [

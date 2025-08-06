@@ -6,7 +6,7 @@ const Loading = <div>Loading....</div>;
 // lazy()를 사용하여 컴포넌트를 동적으로 import
 // 지연로딩 을 통해 초기 로딩 속도를 개선 필요한 시점에 컴포넌트 로드
 
-const MainPage = lazy(() => import("../pages/MainPage"));
+const MainPage = lazy(() => import("../domain/main/pages/MainPage"));
 
 const root = createBrowserRouter([
   {
