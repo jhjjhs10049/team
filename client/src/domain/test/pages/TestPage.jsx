@@ -7,7 +7,7 @@ const MainPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:text-center">
             <h2 className="text-base text-black-600 font-semibold tracking-wide uppercase">
-              메인페이지 테스트
+              테스트 페이지 테스트
             </h2>
           </div>
         </div>

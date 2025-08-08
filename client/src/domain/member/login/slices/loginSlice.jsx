@@ -6,7 +6,7 @@ import { getCookie, removeCookie, setCookie } from "../../util/cookieUtil";
 // 로그인 상태를 저장할 기본 객체
 const initState = {
   email: "",
-};
+};    
 
 const loadMemberCookie = () => {
   // 쿠키에서 member 정보를 가져와서 객체로 변환

@@ -1,6 +1,7 @@
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import useCustomLogin from "../../domain/member/login/hooks/useCustomLogin";
+import { AdminManagerLink } from "../config/ProtectedAdmin";
 
 const BasicMenu = () => {
   //useSelector ? 애플리케이션의 상태를 받아서 자신이 원하는 상태 데이터를 선별(selector) 하는 용도
@@ -18,15 +19,20 @@ const BasicMenu = () => {
   return (
     <nav id="navbar" className="bg-gray-500 w-full">
       <div className="flex max-w-[1200px] mx-auto">
-        {" "}
         {/* 왼쪽 영역 - 600px */}
         <div className="w-[600px] flex justify-start">
           <div className="flex p-4 text-white">
             <div className="pr-3 hover:underline cursor-pointer">
               <Link to="/">메인화면</Link>
             </div>
+            <div className="pr-3 hover:underline cursor-pointer">
+              <Link to="/test">테스트</Link>
+            </div>
+            <div className="pr-3 hover:underline cursor-pointer">
+              <AdminManagerLink to="/admin-test">어드민테스트</AdminManagerLink>
+            </div>
           </div>
-        </div>{" "}
+        </div>
         {/* 오른쪽 영역 - 600px */}
         <div className="w-[600px] flex justify-end p-4 font-medium">
           {!loginState.email ? ( // 로그인 상태가 아니라면
@@ -42,7 +48,7 @@ const BasicMenu = () => {
             <>
               <div className="text-white pr-3 hover:underline cursor-pointer">
                 <button onClick={handleLogout}>로그아웃</button>
-              </div>{" "}
+              </div>
               <div className="text-white pr-3 hover:underline cursor-pointer">
                 <Link to={"/member/mypage"}>마이페이지</Link>
               </div>
