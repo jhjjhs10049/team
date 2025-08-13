@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_SERVER_HOST } from "../../global/api/axios";
+import { API_SERVER_HOST } from "../../global/api/axios.jsx";
 
 const rest_api_key = import.meta.env.VITE_KAKAO_REST_KEY;
 const redirect_uri = import.meta.env.VITE_KAKAO_REDIRECT_URI;

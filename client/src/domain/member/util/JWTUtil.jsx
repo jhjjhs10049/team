@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getCookie, setCookie } from "./cookieUtil";
-import { API_SERVER_HOST } from "../api/apiConfig";
+import { API_SERVER_HOST } from "../../global/api/axios.jsx";
 
 /*****************************************************************************************************
  * 최초 로그인시 -> 액세트 토큰 과 리프레쉬 토큰을 을 서버로 부터 전송 받아서 쿠키에 저장
