@@ -4,7 +4,6 @@ class AlertManager {
     this.isShowing = false;
     this.currentMessage = "";
   }
-
   showAlert(message) {
     // 같은 메시지가 이미 표시 중이면 무시
     if (this.isShowing && this.currentMessage === message) {
@@ -14,7 +13,13 @@ class AlertManager {
     this.isShowing = true;
     this.currentMessage = message;
 
-    alert(message);
+    // 즉시 alert 표시
+    try {
+      alert(message);
+    } catch (error) {
+      console.error("Alert error:", error);
+      console.log("Alert message:", message);
+    }
 
     // 1초 후 플래그 해제
     setTimeout(() => {
@@ -23,6 +28,11 @@ class AlertManager {
     }, 1000);
 
     return true;
+  }
+
+  // 디버깅용 메서드
+  testAlert() {
+    this.showAlert("테스트 알람입니다!");
   }
 }
 

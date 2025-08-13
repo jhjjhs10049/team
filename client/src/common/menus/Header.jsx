@@ -29,7 +29,7 @@ const BasicMenu = () => {
               <Link to="/test">테스트</Link>
             </div>
             <div className="pr-3 hover:underline cursor-pointer">
-              <AdminManagerLink to="/admin-test">어드민테스트</AdminManagerLink>
+              <AdminManagerLink to="/admin/member">어드민</AdminManagerLink>
             </div>
           </div>
         </div>

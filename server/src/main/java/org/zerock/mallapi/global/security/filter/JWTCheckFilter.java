@@ -41,13 +41,14 @@ public class JWTCheckFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        log.info("check uri.........." + path);        // api/member/ 경로의 호출은 체크하지 않음
-        if(path.startsWith("/api/member/")){
+        log.info("check uri.........." + path);        // api/member/ , api/gyms/ 경로의 호출은 체크하지 않음
+        if(path.startsWith("/api/member/")|| path.startsWith("/api/gyms/")) {
             return true;
         }
 
         return false;
-    }    @Override
+    }    
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         
         log.info("-------JWTCheckFilter----------------");

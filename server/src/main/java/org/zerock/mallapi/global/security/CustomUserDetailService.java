@@ -47,6 +47,7 @@ public class CustomUserDetailService implements UserDetailsService {
                 member.getDetailAddress(),
                 member.getActive(),
                 member.getRole(),
+                member.getRoleCode(),
                 member.getSocial() != null ? member.getSocial() : false,
                 member.getModifiedDate(),
                 member.getJoinedDate(),

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import useCustomLogin from "../../domain/member/login/hooks/useCustomLogin";
+import alertManager from "../../domain/member/util/alertManager";
 
 // 권한별 접근 제어를 위한 컴포넌트들
 
@@ -13,6 +14,7 @@ import useCustomLogin from "../../domain/member/login/hooks/useCustomLogin";
  *   noAuthMessage="로그인이 필요합니다."
  *   noPermissionMessage="관리자에게 문의하세요."
  *   fallback={<div>권한이 없습니다</div>}
+ *   redirectOnNoAuth={true}
  * >
  *   <div>관리자만 볼 수 있는 내용</div>
  * </AdminManagerComponent>
@@ -24,15 +26,15 @@ const AdminManagerComponent = ({
   showFallbackOnNoAuth = false,
   noAuthMessage = "로그인이 필요합니다.",
   noPermissionMessage = "관리자에게 문의하세요.",
-  redirectOnNoAuth = false, // 권한 없을 때 리다이렉트 여부
+    redirectOnNoAuth = false,
 }) => {
-  const { isLogin, loginState, moveToLogin } = useCustomLogin();
+  const { isLogin, loginState, moveToLogin, moveToPath } = useCustomLogin();
 
   useEffect(() => {
     if (redirectOnNoAuth) {
       // 로그인되지 않은 경우
       if (!isLogin) {
-        alert(noAuthMessage);
+        alertManager.showAlert(noAuthMessage);
         moveToLogin();
         return;
       }
@@ -40,17 +42,18 @@ const AdminManagerComponent = ({
       // 권한 확인
       const userRole = loginState?.roleNames?.[0];
       if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-        alert(noPermissionMessage);
-        moveToLogin();
+        alertManager.showAlert(noPermissionMessage);
+        moveToPath("/"); // 메인화면으로 이동
         return;
       }
     }
   }, [
     isLogin,
     loginState,
-    moveToLogin,
     noAuthMessage,
     noPermissionMessage,
+    moveToLogin,
+    moveToPath,
     redirectOnNoAuth,
   ]);
 
@@ -100,18 +103,18 @@ const AdminManagerButton = ({
   noPermissionMessage = "관리자에게 문의하세요.",
   className = "",
   disabled = false,
-  hideOnNoAuth = true, // 권한 없을 때 버튼 숨김 여부
-  showDisabled = false, // 권한 없을 때 비활성화된 버튼 표시 여부
-  redirectOnNoAuth = false, // 권한 없을 때 리다이렉트 여부
+  hideOnNoAuth = true,
+  showDisabled = false,
+  redirectOnNoAuth = false,
   ...props
 }) => {
-  const { isLogin, loginState, moveToLogin } = useCustomLogin();
+  const { isLogin, loginState, moveToLogin, moveToPath } = useCustomLogin();
 
   useEffect(() => {
     if (redirectOnNoAuth) {
       // 로그인되지 않은 경우
       if (!isLogin) {
-        alert(noAuthMessage);
+        alertManager.showAlert(noAuthMessage);
         moveToLogin();
         return;
       }
@@ -119,24 +122,25 @@ const AdminManagerButton = ({
       // 권한 확인
       const userRole = loginState?.roleNames?.[0];
       if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-        alert(noPermissionMessage);
-        moveToLogin();
+        alertManager.showAlert(noPermissionMessage);
+        moveToPath("/"); // 메인화면으로 이동
         return;
       }
     }
   }, [
     isLogin,
     loginState,
-    moveToLogin,
     noAuthMessage,
     noPermissionMessage,
+    moveToLogin,
+    moveToPath,
     redirectOnNoAuth,
   ]);
 
   const handleClick = (e) => {
     if (!isLogin) {
       e.preventDefault();
-      alert(noAuthMessage);
+      alertManager.showAlert(noAuthMessage);
       moveToLogin();
       return;
     }
@@ -144,7 +148,7 @@ const AdminManagerButton = ({
     const userRole = loginState?.roleNames?.[0];
     if (userRole !== "ADMIN" && userRole !== "MANAGER") {
       e.preventDefault();
-      alert(redirectMessage);
+      alertManager.showAlert(redirectMessage);
       return;
     }
 
@@ -156,7 +160,7 @@ const AdminManagerButton = ({
 
   // 로그인되지 않은 경우
   if (!isLogin) {
-    if (redirectOnNoAuth) return null; // 리다이렉트 진행 중
+    if (redirectOnNoAuth) return null;
     if (hideOnNoAuth) return null;
     if (showDisabled) {
       return (
@@ -179,7 +183,7 @@ const AdminManagerButton = ({
 
   // 권한이 없는 경우
   if (!hasPermission) {
-    if (redirectOnNoAuth) return null; // 리다이렉트 진행 중
+    if (redirectOnNoAuth) return null;
     if (hideOnNoAuth) return null;
     if (showDisabled) {
       return (
@@ -211,6 +215,7 @@ const AdminManagerButton = ({
 
 /**
  * ADMIN, MANAGER 권한이 필요한 링크를 보호하는 컴포넌트
+ * 권한이 없으면 링크 자체가 보이지 않음
  *
  * 사용법:
  * <AdminManagerLink
@@ -230,7 +235,7 @@ const AdminManagerLink = ({
   noPermissionMessage = "관리자에게 문의하세요.",
   className = "",
   hideOnNoAuth = true,
-  redirectOnNoAuth = false, // 권한 없을 때 리다이렉트 여부
+  redirectOnNoAuth = false,
   ...props
 }) => {
   const { isLogin, loginState, moveToLogin, moveToPath } = useCustomLogin();
@@ -239,7 +244,7 @@ const AdminManagerLink = ({
     if (redirectOnNoAuth) {
       // 로그인되지 않은 경우
       if (!isLogin) {
-        alert(noAuthMessage);
+        alertManager.showAlert(noAuthMessage);
         moveToLogin();
         return;
       }
@@ -247,17 +252,18 @@ const AdminManagerLink = ({
       // 권한 확인
       const userRole = loginState?.roleNames?.[0];
       if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-        alert(noPermissionMessage);
-        moveToLogin();
+        alertManager.showAlert(noPermissionMessage);
+        moveToPath("/"); // 메인화면으로 이동
         return;
       }
     }
   }, [
     isLogin,
     loginState,
-    moveToLogin,
     noAuthMessage,
     noPermissionMessage,
+    moveToLogin,
+    moveToPath,
     redirectOnNoAuth,
   ]);
 
@@ -265,14 +271,14 @@ const AdminManagerLink = ({
     e.preventDefault();
 
     if (!isLogin) {
-      alert(noAuthMessage);
+      alertManager.showAlert(noAuthMessage);
       moveToLogin();
       return;
     }
 
     const userRole = loginState?.roleNames?.[0];
     if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-      alert(redirectMessage);
+      alertManager.showAlert(redirectMessage);
       return;
     }
 
@@ -282,7 +288,7 @@ const AdminManagerLink = ({
 
   // 로그인되지 않은 경우
   if (!isLogin) {
-    if (redirectOnNoAuth) return null; // 리다이렉트 진행 중
+    if (redirectOnNoAuth) return null;
     if (hideOnNoAuth) return null;
     return null;
   }
@@ -292,7 +298,7 @@ const AdminManagerLink = ({
   const hasPermission = userRole === "ADMIN" || userRole === "MANAGER";
 
   if (!hasPermission) {
-    if (redirectOnNoAuth) return null; // 리다이렉트 진행 중
+    if (redirectOnNoAuth) return null;
     if (hideOnNoAuth) return null;
     return null;
   }

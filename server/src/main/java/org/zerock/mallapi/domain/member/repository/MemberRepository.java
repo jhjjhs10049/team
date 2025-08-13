@@ -22,9 +22,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     
     // 이메일 존재 여부 확인
     boolean existsByEmail(String email);
+      // 닉네임 존재 여부 확인
+    boolean existsByNickname(String nickname);    // MANAGER 역할의 최신 코드 조회 (1001부터 시작)
+    @Query(value = "SELECT role_code FROM member WHERE role = 'MANAGER' AND role_code LIKE '1%' ORDER BY role_code DESC LIMIT 1", nativeQuery = true)
+    Optional<String> findLatestManagerCode();
+      // 특정 roleCode 존재 여부 확인
+    boolean existsByRoleCode(String roleCode);
     
-    // 닉네임 존재 여부 확인
-    boolean existsByNickname(String nickname);
+    // roleCode가 null인 MANAGER들 조회
+    @Query("SELECT m FROM Member m WHERE m.role = 'MANAGER' AND m.roleCode IS NULL ORDER BY m.joinedDate ASC")
+    java.util.List<Member> findManagersWithoutRoleCode();
     
     // 기존 호환성을 위한 메서드
     default Member getWithRoles(String email) {

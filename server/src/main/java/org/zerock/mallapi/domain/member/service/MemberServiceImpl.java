@@ -36,12 +36,13 @@ public class MemberServiceImpl implements MemberService{
         // 이메일 중복 체크
         if (memberRepository.existsByEmail(memberJoinDTO.getEmail())) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
-        }
-        
-        // 닉네임 중복 체크
+        }        // 닉네임 중복 체크
         if (memberRepository.existsByNickname(memberJoinDTO.getNickname())) {
             throw new RuntimeException("이미 존재하는 닉네임입니다.");
-        }        Member member = Member.builder()
+        }
+
+        // 회원가입은 모두 USER 역할로 고정
+        Member member = Member.builder()
                 .email(memberJoinDTO.getEmail())
                 .pw(passwordEncoder.encode(memberJoinDTO.getPw()))
                 .nickname(memberJoinDTO.getNickname())
@@ -50,7 +51,7 @@ public class MemberServiceImpl implements MemberService{
                 .roadAddress(memberJoinDTO.getRoadAddress())
                 .detailAddress(memberJoinDTO.getDetailAddress())
                 .active(MemberStatus.ACTIVE)
-                .role(MemberRole.USER)
+                .role(MemberRole.USER) // 모든 가입자는 USER로 고정
                 .social(false)
                 .joinedDate(DateTimeUtil.getJoinedTime())
                 .build();
@@ -270,7 +271,112 @@ public class MemberServiceImpl implements MemberService{
         boolean matches = passwordEncoder.matches(password, member.getPw());
         
         log.info("비밀번호 확인 결과: " + matches);
+          return matches;
+    }
+    
+    @Override
+    public String generateManagerCode() {
+        log.info("MANAGER 코드 생성 요청");
         
-        return matches;
+        // 기존 MANAGER 코드 중 가장 큰 값 조회
+        Optional<String> latestCodeOpt = memberRepository.findLatestManagerCode();
+        
+        String newCode;
+        if (latestCodeOpt.isPresent()) {
+            String latestCode = latestCodeOpt.get();
+            log.info("기존 최신 MANAGER 코드: " + latestCode);
+            
+            try {
+                // 기존 코드에서 숫자 부분을 추출하여 1 증가
+                int currentNumber = Integer.parseInt(latestCode);
+                int nextNumber = currentNumber + 1;
+                newCode = String.format("%04d", nextNumber); // 4자리로 포맷팅
+                
+                // 중복 확인 (혹시나 해서)
+                while (memberRepository.existsByRoleCode(newCode)) {
+                    nextNumber++;
+                    newCode = String.format("%04d", nextNumber);
+                }
+            } catch (NumberFormatException e) {
+                log.warn("기존 코드 파싱 실패, 기본값으로 설정: " + latestCode);
+                newCode = "1001"; // 파싱 실패 시 기본값
+            }
+        } else {
+            // 첫 번째 MANAGER인 경우
+            newCode = "1001";
+            log.info("첫 번째 MANAGER, 코드: " + newCode);
+        }
+          log.info("생성된 MANAGER 코드: " + newCode);
+        return newCode;
+    }
+    
+    @Override
+    public void assignRoleCodeToExistingManagers() {
+        log.info("기존 MANAGER들에게 roleCode 부여 시작");
+        
+        // roleCode가 없는 MANAGER들 조회
+        java.util.List<Member> managersWithoutCode = memberRepository.findManagersWithoutRoleCode();
+        
+        if (managersWithoutCode.isEmpty()) {
+            log.info("roleCode가 필요한 MANAGER가 없습니다.");
+            return;
+        }
+        
+        log.info("roleCode 부여 대상 MANAGER 수: " + managersWithoutCode.size());
+        
+        for (Member manager : managersWithoutCode) {
+            String newCode = generateManagerCode();
+            manager.changeRoleCode(newCode);
+            memberRepository.save(manager);
+            
+            log.info("MANAGER {} (가입일: {})에게 코드 {} 부여", 
+                manager.getEmail(), 
+                manager.getJoinedDate(), 
+                newCode);
+        }
+          log.info("기존 MANAGER들에게 roleCode 부여 완료");
+    }
+    
+    @Override
+    public void promoteToManager(String email) {
+        log.info("MANAGER 승격 요청: " + email);
+        
+        Member member = memberRepository.findByEmailAndActiveStatus(email)
+            .orElseThrow(() -> new RuntimeException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
+        
+        // 이미 MANAGER인 경우 예외 처리
+        if (member.getRole() == MemberRole.MANAGER) {
+            throw new RuntimeException("이미 MANAGER 권한을 가진 회원입니다: " + email);
+        }
+        
+        // MANAGER 역할로 변경 및 코드 생성
+        String roleCode = generateManagerCode();
+        member.changeRole(MemberRole.MANAGER);
+        member.changeRoleCode(roleCode);
+        
+        memberRepository.save(member);
+        
+        log.info("MANAGER 승격 완료: {} (코드: {})", email, roleCode);
+    }
+    
+    @Override
+    public void demoteFromManager(String email) {
+        log.info("MANAGER 권한 해제 요청: " + email);
+        
+        Member member = memberRepository.findByEmailAndActiveStatus(email)
+            .orElseThrow(() -> new RuntimeException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
+        
+        // MANAGER가 아닌 경우 예외 처리
+        if (member.getRole() != MemberRole.MANAGER) {
+            throw new RuntimeException("MANAGER 권한이 없는 회원입니다: " + email);
+        }
+        
+        // USER 역할로 변경 및 roleCode 제거
+        member.changeRole(MemberRole.USER);
+        member.changeRoleCode(null);
+        
+        memberRepository.save(member);
+        
+        log.info("MANAGER 권한 해제 완료: " + email);
     }
 }

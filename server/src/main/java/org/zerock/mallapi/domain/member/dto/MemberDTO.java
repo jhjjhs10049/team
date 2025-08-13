@@ -29,8 +29,9 @@ public class MemberDTO extends User {
     private String nickname;    private String phone;
     private String postalCode;
     private String roadAddress;
-    private String detailAddress;private MemberStatus active;
+    private String detailAddress;    private MemberStatus active;
     private MemberRole role;
+    private String roleCode;
     private boolean social;
     @JsonFormat(pattern = DateTimeUtil.DATE_TIME_PATTERN, timezone = "Asia/Seoul")
     private LocalDateTime modifiedDate;
@@ -52,10 +53,10 @@ public class MemberDTO extends User {
         this.nickname = nickname;
         this.social = social;
         this.roleNames = roleNames;
-    }      // 새로운 생성자 추가 (전체 필드)
+    }    // 새로운 생성자 추가 (전체 필드)
     public MemberDTO(Long memberNo, String email, String pw, String nickname, String phone, 
                      String postalCode, String roadAddress, String detailAddress,
-                     MemberStatus active, MemberRole role, boolean social, 
+                     MemberStatus active, MemberRole role, String roleCode, boolean social, 
                      LocalDateTime modifiedDate, LocalDateTime joinedDate,
                      List<String> roleNames) {
         super(email, pw, roleNames.stream().map(str ->
@@ -71,6 +72,7 @@ public class MemberDTO extends User {
         this.detailAddress = detailAddress;
         this.active = active;
         this.role = role;
+        this.roleCode = roleCode;
         this.social = social;
         this.modifiedDate = modifiedDate;
         this.joinedDate = joinedDate;
@@ -96,10 +98,14 @@ public class MemberDTO extends User {
     }
     public void setActive(MemberStatus active) {
         this.active = active;
-    }
-    public void setRole(MemberRole role) {
+    }    public void setRole(MemberRole role) {
         this.role = role;
     }
+    
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
+    }
+    
     public void setModifiedDate(LocalDateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
@@ -116,9 +122,9 @@ public class MemberDTO extends User {
         dataMap.put("nickname", nickname);          dataMap.put("phone", phone);
         dataMap.put("postalCode", postalCode);
         dataMap.put("roadAddress", roadAddress);
-        dataMap.put("detailAddress", detailAddress);
-        dataMap.put("active", active != null ? active.toString() : null);
+        dataMap.put("detailAddress", detailAddress);        dataMap.put("active", active != null ? active.toString() : null);
         dataMap.put("role", role != null ? role.toString() : null);
+        dataMap.put("roleCode", roleCode);
         dataMap.put("social", social);
         // LocalDateTime을 문자열로 변환하여 직렬화 문제 해결
         dataMap.put("modifiedDate", modifiedDate != null ? modifiedDate.toString() : null);

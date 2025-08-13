@@ -28,9 +28,18 @@ public interface MemberService {
     MemberDTO getMemberByEmail(String email);
       // 회원탈퇴
     void withdrawMember(String email);
-    
-    // 비밀번호 확인
+      // 비밀번호 확인
     boolean verifyPassword(String email, String password);
+      // MANAGER 역할 코드 생성
+    String generateManagerCode();
+      // 기존 MANAGER들에게 roleCode 부여
+    void assignRoleCodeToExistingManagers();
+    
+    // 특정 회원을 MANAGER로 승격 (roleCode 자동 생성)
+    void promoteToManager(String email);
+    
+    // 특정 회원의 MANAGER 권한 해제
+    void demoteFromManager(String email);
     
     //회원 정보는 MemberDTO 타입으로 처리되어야 하므로 Member 엔티티 객체를 MemberDTO 객체로 변환
     default MemberDTO entityToDTO(Member member){
@@ -43,9 +52,9 @@ public interface MemberService {
         dto.setMemberNo(member.getMemberNo());        dto.setPhone(member.getPhone());
         dto.setPostalCode(member.getPostalCode());
         dto.setRoadAddress(member.getRoadAddress());
-        dto.setDetailAddress(member.getDetailAddress());
-        dto.setActive(member.getActive());
+        dto.setDetailAddress(member.getDetailAddress());        dto.setActive(member.getActive());
         dto.setRole(member.getRole());
+        dto.setRoleCode(member.getRoleCode());
         dto.setModifiedDate(member.getModifiedDate());
         dto.setJoinedDate(member.getJoinedDate());
 

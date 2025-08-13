@@ -136,9 +136,66 @@ public class MemberController {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            log.error("Member withdraw error: ", e);
-            return ResponseEntity.badRequest()
+            log.error("Member withdraw error: ", e);            return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원탈퇴 중 오류가 발생했습니다."));
+        }
+    }
+      // 기존 MANAGER들에게 roleCode 부여 (관리자 전용)
+    @PostMapping("/admin/assign-manager-codes")
+    public ResponseEntity<?> assignManagerCodes() {
+        try {
+            log.info("기존 MANAGER들에게 roleCode 부여 요청");
+            
+            memberService.assignRoleCodeToExistingManagers();
+            
+            return ResponseEntity.ok(Map.of("message", "기존 MANAGER들에게 roleCode 부여가 완료되었습니다."));
+
+        } catch (Exception e) {
+            log.error("Manager code assignment error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "roleCode 부여 중 오류가 발생했습니다: " + e.getMessage()));
+        }
+    }
+    
+    // 특정 회원을 MANAGER로 승격 (관리자 전용)
+    @PostMapping("/admin/promote-manager")
+    public ResponseEntity<?> promoteToManager(@RequestParam String email) {
+        try {
+            log.info("MANAGER 승격 요청: " + email);
+            
+            memberService.promoteToManager(email);
+            
+            return ResponseEntity.ok(Map.of("message", email + " 회원이 MANAGER로 승격되었습니다."));
+
+        } catch (RuntimeException e) {
+            log.error("Manager promotion error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Manager promotion error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "MANAGER 승격 중 오류가 발생했습니다."));
+        }
+    }
+    
+    // 특정 회원의 MANAGER 권한 해제 (관리자 전용)
+    @PostMapping("/admin/demote-manager")
+    public ResponseEntity<?> demoteFromManager(@RequestParam String email) {
+        try {
+            log.info("MANAGER 권한 해제 요청: " + email);
+            
+            memberService.demoteFromManager(email);
+            
+            return ResponseEntity.ok(Map.of("message", email + " 회원의 MANAGER 권한이 해제되었습니다."));
+
+        } catch (RuntimeException e) {
+            log.error("Manager demotion error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Manager demotion error: ", e);
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "MANAGER 권한 해제 중 오류가 발생했습니다."));
         }
     }
 }

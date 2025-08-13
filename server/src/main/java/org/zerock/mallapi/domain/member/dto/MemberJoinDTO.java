@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 public class MemberJoinDTO {
     private String email;
     private String pw;
-    private String nickname;    private String phone;
+    private String nickname;    
+    private String phone;
     private String postalCode;
     private String roadAddress;
     private String detailAddress;

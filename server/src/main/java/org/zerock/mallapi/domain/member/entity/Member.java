@@ -46,16 +46,17 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(name = "active", nullable = false)
     @Builder.Default
-    private MemberStatus active = MemberStatus.ACTIVE;
-
-    @Enumerated(EnumType.STRING)
+    private MemberStatus active = MemberStatus.ACTIVE;    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     @Builder.Default
     private MemberRole role = MemberRole.USER;
 
+    @Column(name = "role_code", length = 4)
+    private String roleCode;
+
     @Column(name = "social")
     @Builder.Default
-    private Boolean social = false;    
+    private Boolean social = false;
     
     @Column(name = "modified_date", nullable = true, columnDefinition = "DATETIME")
     @JsonFormat(pattern = DateTimeUtil.DATE_TIME_PATTERN, timezone = "Asia/Seoul")
@@ -95,7 +96,12 @@ public class Member {
     }    public void changeRole(MemberRole role) {
         this.role = role;
         this.modifiedDate = DateTimeUtil.getModifiedTime();
-    }    
+    }
+
+    public void changeRoleCode(String roleCode) {
+        this.roleCode = roleCode;
+        this.modifiedDate = DateTimeUtil.getModifiedTime();
+    }
     // 디폴트 설정
     @PrePersist
     public void prePersist() {
