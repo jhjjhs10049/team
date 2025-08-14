@@ -22,7 +22,7 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 로그인 성공시 여기로 들어온다.
         log.info("----------------------");
-        log.info(authentication);//로그인한 사용자의 정보를 로그로 출력한다.
+        log.info(authentication);//스프링 시큐리티가 만들어 놓은 Authentication 객체 (로그인하려는 사용자의 정보가 담겨있다.)
         log.info("----------------------");
 
         //authentication 에 로그인한 사용자의 정보가 있긴 하지만
@@ -36,8 +36,8 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = JWTUtil.generateToken(claims, 10); //10분
         String refreshToken = JWTUtil.generateToken(claims, 60*24);//24시간
 
-        claims.put("accessToken", accessToken);  // 나중에 구현
-        claims.put("refreshToken", refreshToken); // 나중에 구현
+        claims.put("accessToken", accessToken);  
+        claims.put("refreshToken", refreshToken);
 
         //Gson : java 객체를 JSON 으로 바꾸거나, JSON 을 자바 객체로 바꿔주는 도구
         Gson gson = new Gson();

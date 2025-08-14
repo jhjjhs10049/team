@@ -28,8 +28,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<String> findLatestManagerCode();
       // 특정 roleCode 존재 여부 확인
     boolean existsByRoleCode(String roleCode);
-    
-    // roleCode가 null인 MANAGER들 조회
+      // roleCode가 null인 MANAGER들 조회
     @Query("SELECT m FROM Member m WHERE m.role = 'MANAGER' AND m.roleCode IS NULL ORDER BY m.joinedDate ASC")
     java.util.List<Member> findManagersWithoutRoleCode();
     
@@ -38,4 +37,3 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         return getWithRoles(email, MemberStatus.ACTIVE).orElse(null);
     }
 }
- 

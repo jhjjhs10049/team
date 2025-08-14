@@ -53,6 +53,8 @@ const MyPageForm = () => {
     available: false,
     message: "",
   });
+  // 회원탈퇴 모달 열기 (비밀번호 확인 후)
+  const [isWithdrawReady, setIsWithdrawReady] = useState(false);
 
   // 페이지 로드 시 회원 정보 조회
   const fetchMemberData = useCallback(async () => {
@@ -237,15 +239,18 @@ const MyPageForm = () => {
     setIsPasswordModalOpen(false);
   };
 
-  // 비밀번호 확인 처리
+  // 비밀번호 확인 처리 (정보수정/탈퇴 구분)
   const handlePasswordVerify = async (password) => {
     try {
       const response = await verifyPassword(loginState.email, password);
-
       if (response.valid) {
-        // 비밀번호가 맞으면 편집 모드로 전환
         setIsPasswordModalOpen(false);
-        setIsEditing(true);
+        if (isWithdrawReady) {
+          setIsWithdrawReady(false);
+          setIsWithdrawModalOpen(true); // 탈퇴 모달 띄움
+        } else {
+          setIsEditing(true); // 정보수정 편집모드
+        }
       } else {
         alert("비밀번호가 일치하지 않습니다.");
       }
@@ -261,7 +266,8 @@ const MyPageForm = () => {
 
   // 회원탈퇴 모달 열기
   const handleWithdrawClick = () => {
-    setIsWithdrawModalOpen(true);
+    setIsPasswordModalOpen(true);
+    setIsWithdrawReady(true);
   };
 
   // 회원탈퇴 모달 닫기

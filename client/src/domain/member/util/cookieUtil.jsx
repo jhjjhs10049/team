@@ -7,21 +7,20 @@ import { Cookies } from "react-cookie";
 // 이문제를 해결하기 위해서 애플리케이션의 상태 데이터를 보관하고 
 // 애플리케이션이 로딩될 때 저장된 정보들을 로딩 해서 사용해야 한다.
 // 그래서 쿠키를 사용합니다.  
-const cookies = new Cookies()
-
-export const setCookie = (name, value, days) => {
-    const expires = new Date()
-    //expires.getUTCDate() : expires 가 가리키는 날짜의 UTC 기준 일(day) 값을 반환(현재 시간이 아닌 일(day) 을 반환한다.)
-    // 예를 들어 expires가 2025년 7월 11일 15시 UTC 라면 11(day)을 반환한다.
-    // 일(day) 만 처리 하므로 년,월 을 따로 처리해서 가져와야 한다.
-    // UTC ? 세계 표준 시각입니다.
-    // UTC 왜 쓰나? 시간대 차이 없이 항상 전 세계에서 동일한 시간으로 다루고 싶어서
-    // 예를 들면, 서버, 로그, 쿠키 만요 시간, API 요청 시간 등 시간대 혼동을 막기 위해 많이 쓴다.
-    expires.setUTCDate(expires.getUTCDate() + days) // 보관 기한
-
-    return cookies.set(name, value, {path:'/', expires : expires})
-}
-
+const cookies = new Cookies();
+/**
+ * 쿠키 설정 (유지기간: days일)
+ * @param {string} name - 쿠키 이름
+ * @param {string} value - 쿠키 값
+ * @param {number} days - 유지 기간(일)
+ */
+export const setCookie = (name, value, days = 1) => {
+  const maxAge = days * 24 * 60 * 60; // 일 → 초 단위 변환
+  return cookies.set(name, value, {
+    path: "/",        // 사이트 전체에서 사용
+    maxAge,           // 초 단위 유지기간
+  });
+};
 export const getCookie = (name) => {
     return cookies.get(name)
 }
