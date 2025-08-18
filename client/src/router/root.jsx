@@ -4,13 +4,13 @@ import memberRouter from "./memberRouter";
 import { ProtectedComponent } from "../common/config/ProtectedLogin";
 import { AdminManagerComponent } from "../common/config/ProtectedAdmin";
 
-import MapGymsPage from "../domain/gyms/pages/MapGymsPage.jsx";
-import GymDetailPage from "../domain/gyms/pages/GymDetailPage.jsx";
-import GymReviewPage from "../domain/gyms/pages/GymReviewPage.jsx";
+// import MapGymsPage from "../domain/gyms/pages/MapGymsPage.jsx";
+// import GymDetailPage from "../domain/gyms/pages/GymDetailPage.jsx";
+// import GymReviewPage from "../domain/gyms/pages/GymReviewPage.jsx";
 
-import TrainerListPage from "../domain/trainers/pages/TrainerListPage";
-import TrainerDetailPage from "../domain/trainers/pages/TrainerDetailPage";
-import TrainerReviewPage from "../domain/trainers/pages/TrainerReviewPage";
+// import TrainerListPage from "../domain/trainers/pages/TrainerListPage";
+// import TrainerDetailPage from "../domain/trainers/pages/TrainerDetailPage";
+// import TrainerReviewPage from "../domain/trainers/pages/TrainerReviewPage";
 
 const Loading = <div>Loading....</div>;
 // lazy()를 사용하여 컴포넌트를 동적으로 import
@@ -57,55 +57,55 @@ const root = createBrowserRouter([
     children: memberRouter(),
   },
 
-  {
-    path: "/mapgyms",
-    element: (
-      <Suspense fallback={Loading}>
-        <MapGymsPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/gyms/:gymno",
-    element: (
-      <Suspense fallback={Loading}>
-        <GymDetailPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/gyms/:gymno/reviews",
-    element: (
-      <Suspense fallback={Loading}>
-        <GymReviewPage />
-      </Suspense>
-    ),
-  },
+  // {
+  //   path: "/mapgyms",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <MapGymsPage />
+  //     </Suspense>
+  //   ),
+  // },
+  // {
+  //   path: "/gyms/:gymno",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <GymDetailPage />
+  //     </Suspense>
+  //   ),
+  // },
+  // {
+  //   path: "/gyms/:gymno/reviews",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <GymReviewPage />
+  //     </Suspense>
+  //   ),
+  // },
 
-  {
-    path: "/trainers",
-    element: (
-      <Suspense fallback={Loading}>
-        <TrainerListPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/trainers/:trainerno",
-    element: (
-      <Suspense fallback={Loading}>
-        <TrainerDetailPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/trainers/:trainerno/reviews",
-    element: (
-      <Suspense fallback={Loading}>
-        <TrainerReviewPage />
-      </Suspense>
-    ),
-  },
+  // {
+  //   path: "/trainers",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <TrainerListPage />
+  //     </Suspense>
+  //   ),
+  // },
+  // {
+  //   path: "/trainers/:trainerno",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <TrainerDetailPage />
+  //     </Suspense>
+  //   ),
+  // },
+  // {
+  //   path: "/trainers/:trainerno/reviews",
+  //   element: (
+  //     <Suspense fallback={Loading}>
+  //       <TrainerReviewPage />
+  //     </Suspense>
+  //   ),
+  // },
 ]);
 
 export default root;

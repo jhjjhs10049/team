@@ -53,7 +53,9 @@ public class MemberDTO extends User {
         this.nickname = nickname;
         this.social = social;
         this.roleNames = roleNames;
-    }    // 새로운 생성자 추가 (전체 필드)
+    }    
+    
+    // 새로운 생성자 추가 (전체 필드)
     public MemberDTO(Long memberNo, String email, String pw, String nickname, String phone, 
                      String postalCode, String roadAddress, String detailAddress,
                      MemberStatus active, MemberRole role, String roleCode, boolean social, 
@@ -113,7 +115,7 @@ public class MemberDTO extends User {
         this.joinedDate = joinedDate;
     }
 
-// 현재 사용자의 정보를 Map 타입으로 반환(이후에 JWT 문자열 생성시에 사용)
+    // 현재 사용자의 정보를 Map 타입으로 반환(이후에 JWT 문자열 생성시에 사용)
     public Map<String , Object> getClaims() {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("memberNo", memberNo);

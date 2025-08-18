@@ -186,6 +186,7 @@ public class MemberServiceImpl implements MemberService{
         
         return nickname;
     }    
+    
     @Override
     public void modifyMember(MemberModifyDTO memberModifyDTO) {
         Optional<Member> result = memberRepository.findByEmailAndActiveStatus(memberModifyDTO.getEmail());
@@ -223,7 +224,9 @@ public class MemberServiceImpl implements MemberService{
         }
 
         memberRepository.save(member); // 회원 정보 수정
-    }      @Override
+    }      
+    
+    @Override
     public MemberDTO getMemberByEmail(String email) {
         Optional<Member> result = memberRepository.findByEmailAndActiveStatus(email);
         
@@ -232,7 +235,8 @@ public class MemberServiceImpl implements MemberService{
         
         return entityToDTO(member);
     }
-      @Override
+      
+    @Override
     public void withdrawMember(String email) {
         log.info("회원탈퇴 요청: " + email);
         

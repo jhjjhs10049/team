@@ -32,10 +32,6 @@ const BasicMenu = () => {
             <AdminManagerLink to="/admin/member">
               <div className="pr-3 hover:underline cursor-pointer">어드민</div>
             </AdminManagerLink>
-
-            <div className="pr-3 hover:underline cursor-pointer">
-              <Link to="/mapgyms">맵</Link>
-            </div>
           </div>
         </div>
         {/* 오른쪽 영역 - 600px */}
