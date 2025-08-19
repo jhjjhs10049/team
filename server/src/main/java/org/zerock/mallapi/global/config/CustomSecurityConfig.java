@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.zerock.mallapi.domain.admin.service.AdminService;
 import org.zerock.mallapi.global.security.filter.JWTCheckFilter;
 import org.zerock.mallapi.global.security.handler.APILoginFailHandler;
 import org.zerock.mallapi.global.security.handler.APILoginSuccessHandler;
@@ -26,6 +27,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @EnableMethodSecurity// 메서드 보안 활성화(@PreAuthorize, @PostAuthorize 등이 사용가능 해진다)
 public class CustomSecurityConfig {
+
+    private final AdminService adminService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -40,13 +43,10 @@ public class CustomSecurityConfig {
         http.sessionManagement(sessionConfig ->
                 sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         //csrf 토큰 사용하지 않음
-        http.csrf(config -> config.disable());
-
-
-        http.formLogin(config -> {
+        http.csrf(config -> config.disable());        http.formLogin(config -> {
             config.loginPage("/api/member/login");
             //로그인 성공시 처리를 APILoginSuccessHandler 로 설정
-            config.successHandler(new APILoginSuccessHandler());
+            config.successHandler(apiLoginSuccessHandler());
             //로그인 실패시 처리를 APILoginFailHandler 로 설정
             config.failureHandler(new APILoginFailHandler());
         });
@@ -90,6 +90,11 @@ public class CustomSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public APILoginSuccessHandler apiLoginSuccessHandler() {
+        return new APILoginSuccessHandler(adminService);
     }
 
 }

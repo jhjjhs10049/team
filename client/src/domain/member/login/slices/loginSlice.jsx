@@ -49,8 +49,24 @@ const loginSlice = createSlice({
       .addCase(loginPostAsync.pending, () => {
         console.log("pending");
       })
-      .addCase(loginPostAsync.rejected, () => {
+      .addCase(loginPostAsync.rejected, (state, action) => {
         console.log("rejected");
+
+        // 서버에서 반환된 에러 정보를 확인
+        const response = action.meta?.response;
+
+        // 정지된 회원의 경우 특별 처리
+        if (response?.status === 403) {
+          // 403 Forbidden 상태코드는 정지된 회원을 의미
+          console.log("정지된 회원 로그인 시도 감지");
+          return {
+            ...initState,
+            error: "MEMBER_BANNED",
+            banInfo: response?.data?.banInfo,
+          };
+        }
+
+        return state;
       });
   },
 });

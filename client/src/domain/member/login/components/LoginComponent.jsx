@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { loginPostAsync } from "../slices/loginSlice";
 import useCustomLogin from "../hooks/useCustomLogin";
 import KakaoLoginComponent from "./KakaoLoginComponent";
+import BannedMemberModal from "./BannedMemberModal";
 
 const initState = {
   email: "",
@@ -12,6 +13,8 @@ const initState = {
 
 const LoginComponent = () => {
   const [loginParam, setLoginParam] = useState({ ...initState });
+  const [bannedModalOpen, setBannedModalOpen] = useState(false);
+  const [banInfo, setBanInfo] = useState(null);
   const { moveToPath } = useCustomLogin();
 
   const dispatch = useDispatch();
@@ -36,13 +39,23 @@ const LoginComponent = () => {
         if (data.error) {
           // 로그인 실패시
           alert("이메일과 패스워드를 다시 확인 하세요"); // 로그인 실패 시 경고창을 띄운 뒤, navigate나 moveToPath 호출 없이, 현재 페이지에서 상태만 유지한다.
+        } else if (data.isMemberBanned) {
+          // 정지된 회원인 경우 모달 표시
+          setBanInfo(data.banInfo);
+          setBannedModalOpen(true);
         } else {
           alert("로그인 성공");
           //navigate({pathname : `/`}, {replace : true}) // 로그인 성공후 '/' 경로로 이동하고, 뒤로가기 했을때 로그인 화면을 볼수 없게한다.
           moveToPath("/");
         }
+      })
+      .catch((error) => {
+        console.log("Login error:", error);
+        // 일반적인 로그인 실패
+        alert("이메일과 패스워드를 다시 확인하세요");
       });
   };
+
   return (
     <div className="border-2 border-sky-200 mt-4 mb-8 mx-2 p-4 rounded-lg shadow-lg bg-white">
       <div className="flex justify-center">
@@ -102,6 +115,12 @@ const LoginComponent = () => {
         </div>
       </div>
       <KakaoLoginComponent />
+      {/* 정지된 회원 모달 */}
+      <BannedMemberModal
+        isOpen={bannedModalOpen}
+        onClose={() => setBannedModalOpen(false)}
+        banInfo={banInfo}
+      />
     </div>
   );
 };

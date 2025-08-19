@@ -16,6 +16,15 @@ export const loginPost = async (loginParam) => {
 
   const res = await axios.post(`${host}/login`, form, header);
 
+  // 로그인 성공 후 정지 상태 확인
+  if (res.data.isBanned) {
+    // 정지된 회원인 경우 특별한 응답 구조로 반환
+    return {
+      ...res.data,
+      isMemberBanned: true,
+    };
+  }
+
   return res.data;
 };
 

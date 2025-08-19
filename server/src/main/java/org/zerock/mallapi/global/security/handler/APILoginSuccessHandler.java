@@ -4,9 +4,12 @@ import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.zerock.mallapi.domain.admin.dto.BannedDTO;
+import org.zerock.mallapi.domain.admin.service.AdminService;
 import org.zerock.mallapi.domain.member.dto.MemberDTO;
 import org.zerock.mallapi.global.util.JWTUtil;
 
@@ -17,7 +20,11 @@ import java.util.Map;
 
 //로그인 성공후 후처리 작업
 @Log4j2
+@RequiredArgsConstructor
 public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
+    
+    private final AdminService adminService;
+    
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 로그인 성공시 여기로 들어온다.
@@ -28,7 +35,14 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
         //authentication 에 로그인한 사용자의 정보가 있긴 하지만
         //우리가 필요한 타입이 아니라서 변환을 해 줄 필요가 있다.
         //getPrincipal()의 리턴 타입이 Object 라서 (MemberDTO) 로 명시적 형변환을 해주고 있다.
-        MemberDTO memberDTO = (MemberDTO) authentication.getPrincipal();
+        MemberDTO memberDTO = (MemberDTO) authentication.getPrincipal();        // 로그인 사용자의 정지 상태 확인
+        String email = memberDTO.getEmail();
+        BannedDTO banInfo = null;
+        if (adminService.isMemberCurrentlyBanned(email)) {
+            // 정지된 회원인 경우 정지 정보 조회
+            banInfo = adminService.getCurrentBanInfo(email);
+            log.info("정지된 회원이 로그인: {}", email);
+        }
 
         //getClaims() 로 현재 로그인한 사용자의 정보를 가져온다.(getClaims() 클릭해서 확인)
         Map<String, Object> claims = memberDTO.getClaims();
@@ -38,6 +52,12 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
 
         claims.put("accessToken", accessToken);  
         claims.put("refreshToken", refreshToken);
+        
+        // 정지 정보가 있는 경우 추가
+        if (banInfo != null) {
+            claims.put("isBanned", true);
+            claims.put("banInfo", banInfo);
+        }
 
         //Gson : java 객체를 JSON 으로 바꾸거나, JSON 을 자바 객체로 바꿔주는 도구
         Gson gson = new Gson();

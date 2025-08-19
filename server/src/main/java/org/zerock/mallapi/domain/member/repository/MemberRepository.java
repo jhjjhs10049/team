@@ -36,6 +36,14 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // roleCode가 null인 MANAGER들 조회
     @Query("SELECT m FROM Member m WHERE m.role = 'MANAGER' AND m.roleCode IS NULL ORDER BY m.joinedDate ASC")
     java.util.List<Member> findManagersWithoutRoleCode();
+      // Admin 관련 쿼리들
+    // 일반 사용자들만 조회 (ADMIN, MANAGER 제외)
+    @Query("SELECT m FROM Member m WHERE m.role = 'USER' ORDER BY m.joinedDate DESC")
+    java.util.List<Member> findAllUsers();
+    
+    // 일반 사용자와 매니저 조회 (ADMIN 제외)
+    @Query("SELECT m FROM Member m WHERE m.role IN ('USER', 'MANAGER') ORDER BY m.joinedDate DESC")
+    java.util.List<Member> findAllUsersAndManagers();
     
     // 기존 호환성을 위한 메서드
     default Member getWithRoles(String email) {
