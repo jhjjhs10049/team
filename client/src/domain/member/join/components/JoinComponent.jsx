@@ -1,4 +1,4 @@
-import JoinForm from "./partials/JoinForm";
+import JoinForm from "./JoinForm";
 
 const JoinComponent = () => {
   return <JoinForm />;

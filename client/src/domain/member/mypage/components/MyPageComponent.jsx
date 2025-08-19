@@ -1,5 +1,5 @@
 import React from "react";
-import MyPageForm from "./partials/MyPageForm";
+import MyPageForm from "./MyPageForm";
 
 const MyPageComponent = () => {
   return <MyPageForm />;

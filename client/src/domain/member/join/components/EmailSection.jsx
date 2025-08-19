@@ -1,4 +1,4 @@
-import { checkEmail } from "../../../api/memberApi";
+import { checkEmail } from "../../api/memberApi";
 
 const EmailSection = ({ email, emailCheck, setEmailCheck, onChange }) => {
   // 이메일 중복확인 함수

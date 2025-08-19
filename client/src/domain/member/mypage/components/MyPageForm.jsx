@@ -6,8 +6,8 @@ import {
   updateMyPage,
   withdrawMember,
   verifyPassword,
-} from "../../../api/memberApi";
-import { logout } from "../../../login/slices/loginSlice";
+} from "../../api/memberApi";
+import { logout } from "../../login/slices/loginSlice";
 import UpdateResultModal from "./UpdateResultModal";
 import MyPageInfo from "./MyPageInfo";
 import MyPageEdit from "./MyPageEdit";

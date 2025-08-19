@@ -1,5 +1,5 @@
 import React from "react";
-import { checkNickname } from "../../../api/memberApi";
+import { checkNickname } from "../../api/memberApi";
 
 const ProfileSection = ({
   editData,

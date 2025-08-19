@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { searchAddress, formatMoisAddress } from "../../../api/addressApi";
+import { searchAddress, formatMoisAddress } from "../../api/addressApi";
 
 const AddressSection = ({
   postalCode,

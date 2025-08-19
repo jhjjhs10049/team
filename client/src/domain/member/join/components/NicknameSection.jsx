@@ -1,4 +1,4 @@
-import { checkNickname } from "../../../api/memberApi";
+import { checkNickname } from "../../api/memberApi";
 
 const NicknameSection = ({
   nickname,

@@ -1,7 +1,7 @@
 import React from "react";
 import ProfileSection from "./ProfileSection";
 import PasswordSection from "./PasswordSection";
-import AddressSection from "../../../join/components/partials/AddressSection";
+import AddressSection from "../../join/components/AddressSection";
 
 const MyPageEdit = ({
   editData,

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { joinPost } from "../../../api/memberApi";
-import useCustomLogin from "../../../login/hooks/useCustomLogin";
-import ResultModal from "../../../../../common/components/ResultModal";
+import { joinPost } from "../../api/memberApi";
+import useCustomLogin from "../../login/hooks/useCustomLogin";
+import ResultModal from "../../../../common/components/ResultModal";
 import EmailSection from "./EmailSection";
 import PasswordSection from "./PasswordSection";
 import NicknameSection from "./NicknameSection";
