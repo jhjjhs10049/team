@@ -5,6 +5,7 @@ ui (어떻게 동작되는지 1구간정도)
 디자인패턴
 mvc패턴 +util  
 폴더개수 권장은 3개로 사용
+테이블에 관련된 arraylist, set 등 이유
 
 백엔드
 1. api
@@ -36,4 +37,43 @@ MPA 방식은 JSP나 XML 기반 템플릿을 사용해 화면을 구성했는데
 1. 
 
 
+현재 상황은, 로그인되지 않았거나 차단(banned)된 사용자가 로그인 시도를 할 경우, 이를 거부해야 하는 케이스입니다.
+
+단순히 프론트단에서 차단 처리를 하는 건 보안상 문제가 있기 때문에, 이 책임은 **백엔드(Spring Security)**에서 처리하도록 했습니다.
+
+그런데 로그인 실패 시 작동하는 LoginFailureHandler에서는 로그인 실패 응답을 JSON 형식으로 내려주기 위해 Gson을 사용하고 있었는데,
+Gson은 LocalDateTime 타입을 기본적으로 처리하지 못해서 예외가 발생했습니다.
+
+그래서 해결 방법으로, 로그인 실패 처리 부분(LoginFailureHandler)에서만 Jackson(ObjectMapper)을 사용하도록 바꿨고,
+그 결과 LocalDateTime도 문제없이 직렬화되면서 JSON 응답을 안정적으로 내려줄 수 있게 되었습니다.
+
+
+=============================================================
+문제는 Redux Toolkit의 직렬화 과정에서 커스텀 객체 속성들이 손실되는 것이었습니다.
+
+문제 분석:
+CustomAuthenticationProvider에서 BannedMemberException 정상 발생
+APILoginFailHandler에서 403 상태와 밴 정보 정상 응답
+Jackson으로 LocalDateTime 직렬화 문제도 해결
+프론트엔드 API 계층: 정상 작동 ✅
+
+memberApi.jsx에서 403 에러 감지
+BannedMemberException 생성하여 banInfo, isBannedMember 속성 추가
+문제 지점: Redux Toolkit의 createAsyncThunk ❌
+
+Redux Toolkit은 에러 객체를 직렬화할 때 표준 Error 속성만 유지
+커스텀 속성 (banInfo, isBannedMember)은 손실됨
+해결 방법:
+조건을 단순화해서 error.message === "MEMBER_BANNED"만으로 밴된 회원을 식별하도록 수정했습니다:
+
+// 이전 (작동 안 함)
+if (error.isBannedMember || (error.message === "MEMBER_BANNED" && error.banInfo))
+
+// 수정 후 (작동함!)
+if (error.message === "MEMBER_BANNED")
+
+그리고 banInfo가 없을 때는 기본값을 제공하여 모달이 열리도록 했습니다.
+
+교훈:
+Redux Toolkit을 사용할 때는 에러 객체의 커스텀 속성이 직렬화 과정에서 손실될 수 있다는 점을 항상 염두에 두어야 합니다!
 

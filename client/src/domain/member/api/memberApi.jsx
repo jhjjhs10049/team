@@ -8,24 +8,37 @@ export const loginPost = async (loginParam) => {
   //x-www-form-urlencoded : 주로 HTML 폼 데이터를 서버에 전송할 때 사용되는 MIME 타입.
   //post 또는 put 방식에서 사용. HTML 폼의 기본 인코딩 방식
   //application/json: 데이터를 JSON 형식 문자열로 전송 (주로 REST API에서 사용됨)
-  const header = { headers: { "Content-Type": "x-www-form-urlencoded" } };
+  const header = {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  };
+  const params = new URLSearchParams();
+  params.append("username", loginParam.email);
+  params.append("password", loginParam.pw);
+  try {
+    const res = await axios.post(`${host}/login`, params, header);
+    console.log("memberApi loginPost response:", res.data);
+    return res.data;
+  } catch (error) {
+    // 403 에러이고 정지된 회원인 경우
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      error.response.data.error === "MEMBER_BANNED"
+    ) {
+      const bannedError = {
+        name: "BannedMemberError",
+        message: "MEMBER_BANNED",
+        banInfo: error.response.data.banInfo,
+        serverMessage: error.response.data.message,
+        isBannedMember: true,
+      };
 
-  const form = new FormData();
-  form.append("username", loginParam.email);
-  form.append("password", loginParam.pw);
+      throw bannedError;
+    }
 
-  const res = await axios.post(`${host}/login`, form, header);
-
-  // 로그인 성공 후 정지 상태 확인
-  if (res.data.isBanned) {
-    // 정지된 회원인 경우 특별한 응답 구조로 반환
-    return {
-      ...res.data,
-      isMemberBanned: true,
-    };
+    // 다른 에러는 그대로 throw
+    throw error;
   }
-
-  return res.data;
 };
 
 export const joinPost = async (joinParam) => {

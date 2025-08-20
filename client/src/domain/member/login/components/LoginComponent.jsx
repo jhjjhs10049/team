@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-//import {login} from "../../slices/loginSlice"
+import { useDispatch, useSelector } from "react-redux";
 import { loginPostAsync } from "../slices/loginSlice";
 import useCustomLogin from "../hooks/useCustomLogin";
 import KakaoLoginComponent from "./KakaoLoginComponent";
@@ -17,40 +16,64 @@ const LoginComponent = () => {
   const [banInfo, setBanInfo] = useState(null);
   const { moveToPath } = useCustomLogin();
 
+  // Redux 상태에서 ban 정보 가져오기
+  const loginState = useSelector((state) => state.loginSlice);
+  const reduxBanInfo = loginState.banInfo;
+
   const dispatch = useDispatch();
 
   const handleChange = (e) => {
     loginParam[e.target.name] = e.target.value;
-
     setLoginParam({ ...loginParam });
   };
 
   const handleClickLogin = () => {
-    //dispatch ? 리듀서를 통해서 만들어진 새로운 애플리케이션 상태를 반영 하기 위해서 사용.
-    //예로 로그인 페이지 에서 로그인이 처리 되면 useDispatch()를 이용해서 새로운 애플리케이션 상태를 배포(dispatch) 하는 경우에 사용
-    //dispatch(login(loginParam)) // loginParam 이라는 상태값을 loginSlice의 reducer에 정의된 login 액션 함수에 전달(동기화된 호출)
-    //dispatch( loginPostAsync(loginParam)) // loginParam 이라는 상태값을 loginPostAsync 함수에 매개변수로 전달(loginParam 에는 id/pw가 들어갈수 있다.)//비동기 호출
-
-    dispatch(loginPostAsync(loginParam)) // 비동기 호출 이후에 처리된 결과를 ListComponent 에서 받아 보려면 unwrap()을 사용하면 된다.
-      .unwrap() // error 값이 전달 되는 것을 확인해야 하는 경우나 로그인 결과를 받아야 하는 경우에 유용합니다.(action 객체를 검사할 필요 없이 payload나 에러를 직접 다룰 수 있어, 조건문 없이 바로 흐름을 잡기 좋습니다 .)
+    dispatch(loginPostAsync(loginParam))
+      .unwrap()
       .then((data) => {
-        console.log("after unwrap...");
-        console.log(data); // 로그인 성공후 나온 로그값 : email, social, nickname, pw, accessToken, refreshToken, roleNames
         if (data.error) {
-          // 로그인 실패시
-          alert("이메일과 패스워드를 다시 확인 하세요"); // 로그인 실패 시 경고창을 띄운 뒤, navigate나 moveToPath 호출 없이, 현재 페이지에서 상태만 유지한다.
-        } else if (data.isMemberBanned) {
-          // 정지된 회원인 경우 모달 표시
-          setBanInfo(data.banInfo);
-          setBannedModalOpen(true);
+          alert("이메일과 패스워드를 다시 확인 하세요");
         } else {
           alert("로그인 성공");
-          //navigate({pathname : `/`}, {replace : true}) // 로그인 성공후 '/' 경로로 이동하고, 뒤로가기 했을때 로그인 화면을 볼수 없게한다.
           moveToPath("/");
         }
       })
       .catch((error) => {
-        console.log("Login error:", error);
+        // BannedMemberError인 경우 처리
+        if (
+          error.name === "BannedMemberError" ||
+          error.message === "MEMBER_BANNED"
+        ) {
+          // Redux에서 가져온 banInfo 우선 사용, 없으면 error에서 가져오기
+          const banInfoData = reduxBanInfo ||
+            error.banInfo || {
+              reason: "규정 위반",
+              bannedAt: new Date().toISOString(),
+              bannedUntil: null,
+            };
+
+          setBanInfo(banInfoData);
+          setBannedModalOpen(true);
+          return;
+        }
+
+        // AxiosError에서 직접 서버 응답 데이터 확인 (fallback)
+        if (error.response && error.response.status === 403) {
+          const responseData = error.response.data;
+
+          if (responseData.error === "MEMBER_BANNED") {
+            const banInfoData = responseData.banInfo || {
+              reason: "규정 위반",
+              bannedAt: new Date().toISOString(),
+              bannedUntil: null,
+            };
+
+            setBanInfo(banInfoData);
+            setBannedModalOpen(true);
+            return;
+          }
+        }
+
         // 일반적인 로그인 실패
         alert("이메일과 패스워드를 다시 확인하세요");
       });
@@ -62,7 +85,7 @@ const LoginComponent = () => {
         <div className="text-4xl m-4 p-4 font-extrabold text-blue-500">
           Login Component
         </div>
-      </div>{" "}
+      </div>
       <div className="flex justify-center">
         <div className="relative mb-4 flex w-full flex-wrap items-stretch">
           <div className="w-full p-3 text-left font-bold">Email</div>
@@ -88,7 +111,7 @@ const LoginComponent = () => {
             onChange={handleChange}
           />
         </div>
-      </div>{" "}
+      </div>
       <div className="flex justify-center">
         <div className="relative mb-4 flex w-full justify-center">
           <div className="w-2/5 p-6 flex justify-center font-bold">
@@ -112,7 +135,7 @@ const LoginComponent = () => {
               회원가입 하기
             </button>
           </div>
-        </div>
+        </div>{" "}
       </div>
       <KakaoLoginComponent />
       {/* 정지된 회원 모달 */}

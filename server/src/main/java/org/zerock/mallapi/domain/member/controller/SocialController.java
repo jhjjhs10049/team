@@ -2,6 +2,8 @@ package org.zerock.mallapi.domain.member.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.zerock.mallapi.domain.member.dto.MemberDTO;
 import org.zerock.mallapi.domain.member.dto.MemberModifyDTO;
 import org.zerock.mallapi.domain.member.service.MemberService;
+import org.zerock.mallapi.domain.admin.service.AdminService;
 import org.zerock.mallapi.global.util.JWTUtil;
 
 import java.util.Map;
@@ -24,17 +27,19 @@ import java.util.Map;
 @RestController
 @Log4j2
 @RequiredArgsConstructor
-public class SocialController {
+public class SocialController {    private final MemberService memberService;
+    private final AdminService adminService;
 
-    private final MemberService memberService;    @GetMapping("/api/member/kakao")
-    public Map<String,Object> getMemberFromKakao(String accessToken){
+    @SuppressWarnings("unlikely-arg-type")
+    @GetMapping("/api/member/kakao")
+    public ResponseEntity<Map<String,Object>> getMemberFromKakao(String accessToken){
 
         log.info("카카오 로그인 요청 - accessToken: " + accessToken);
 
         try {
             if (accessToken == null || accessToken.trim().isEmpty()) {
                 log.error("accessToken이 없습니다.");
-                return Map.of("error", "ACCESS_TOKEN_REQUIRED");
+                return ResponseEntity.badRequest().body(Map.of("error", "ACCESS_TOKEN_REQUIRED"));
             }
 
             // 카카오에 accessToken 을 전송하고 사용자 정보를 받아온다.
@@ -42,10 +47,24 @@ public class SocialController {
             
             if (memberDTO == null) {
                 log.error("카카오에서 사용자 정보를 받지 못했습니다.");
-                return Map.of("error", "KAKAO_USER_INFO_ERROR");
+                return ResponseEntity.badRequest().body(Map.of("error", "KAKAO_USER_INFO_ERROR"));
+            }            log.info("카카오 사용자 정보 조회 성공: " + memberDTO.getEmail());
+            
+            // 정지된 회원 체크
+            if ("BANNED".equals(memberDTO.getActive())) {
+                log.warn("정지된 회원의 카카오 로그인 시도: " + memberDTO.getEmail());
+                
+                // 실제 ban 정보를 조회해서 사용 (일반 로그인과 동일)
+                Object banInfo = adminService.getCurrentBanInfo(memberDTO.getEmail());
+                
+                Map<String, Object> errorResponse = Map.of(
+                    "error", "MEMBER_BANNED",
+                    "message", "정지된 회원입니다. 관리자에게 문의하시기 바랍니다.",
+                    "banInfo", banInfo
+                );
+                
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
             }
-
-            log.info("카카오 사용자 정보 조회 성공: " + memberDTO.getEmail());
 
             Map<String,Object> claims = memberDTO.getClaims();
 
@@ -59,11 +78,11 @@ public class SocialController {
 
             // 리액트의 KakaoRedirectPage 에서 "/api/member/kakao" 를 요청 하였다.
             // 그래서 KakaoRedirectPage 로 사용자 정보 전송
-            return claims;
+            return ResponseEntity.ok(claims);
             
         } catch (Exception e) {
             log.error("카카오 로그인 처리 중 오류 발생", e);
-            return Map.of("error", "KAKAO_LOGIN_ERROR", "message", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "KAKAO_LOGIN_ERROR", "message", e.getMessage()));
         }
     }
 

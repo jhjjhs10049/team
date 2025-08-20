@@ -17,12 +17,11 @@ const BannedMemberModal = ({ isOpen, onClose, banInfo }) => {
       return "무기한";
     }
   };
-
   const getBanDuration = () => {
-    if (!banInfo.banEnd) return "무기한";
+    if (!banInfo.bannedUntil) return "무기한";
 
     const now = new Date();
-    const endDate = new Date(banInfo.banEnd);
+    const endDate = new Date(banInfo.bannedUntil);
     const diffTime = endDate - now;
 
     if (diffTime <= 0) return "정지 기간 만료";
@@ -31,10 +30,9 @@ const BannedMemberModal = ({ isOpen, onClose, banInfo }) => {
     if (days === 1) return "오늘까지";
     return `${days}일 남음`;
   };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
         <div className="text-center">
           {/* 아이콘 */}
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
@@ -51,16 +49,17 @@ const BannedMemberModal = ({ isOpen, onClose, banInfo }) => {
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 18.5c-.77.833.192 2.5 1.732 2.5z"
               />
             </svg>
-          </div>
-
+          </div>{" "}
           {/* 제목 */}
           <div className="text-2xl font-bold text-red-600 mb-4">
-            계정 정지 알림
+            정지된 회원입니다
           </div>
-
           {/* 메시지 */}
           <div className="text-gray-700 mb-6">
-            <p className="mb-4">귀하의 계정은 현재 정지 상태입니다.</p>
+            <p className="mb-4 text-lg font-medium text-red-600">
+              귀하의 계정은 현재 정지 상태입니다.
+            </p>
+            <p className="mb-4">관리자에게 문의하시기 바랍니다.</p>
 
             {/* 정지 정보 */}
             <div className="bg-gray-50 rounded-lg p-4 text-left">
@@ -70,18 +69,15 @@ const BannedMemberModal = ({ isOpen, onClose, banInfo }) => {
                   <span className="text-red-600 font-medium">
                     {banInfo.reason || "규정 위반"}
                   </span>
-                </div>
-
+                </div>{" "}
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-600">정지 시작:</span>
-                  <span>{formatDate(banInfo.banStart)}</span>
+                  <span>{formatDate(banInfo.bannedAt)}</span>
                 </div>
-
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-600">정지 종료:</span>
-                  <span>{formatDate(banInfo.banEnd)}</span>
+                  <span>{formatDate(banInfo.bannedUntil)}</span>
                 </div>
-
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-600">남은 기간:</span>
                   <span className="text-orange-600 font-medium">
@@ -91,16 +87,14 @@ const BannedMemberModal = ({ isOpen, onClose, banInfo }) => {
               </div>
             </div>
           </div>
-
           {/* 안내 메시지 */}
           <div className="text-sm text-gray-500 mb-6">
             <p>문의사항이 있으시면 고객센터로 연락해주세요.</p>
             <p className="mt-1">
               <span className="font-medium">고객센터: </span>
-              <span className="text-blue-600">1588-1234</span>
+              <span className="text-blue-600">1588-xxxx</span>
             </p>
           </div>
-
           {/* 확인 버튼 */}
           <button
             onClick={onClose}

@@ -6,6 +6,8 @@ import { getCookie, removeCookie, setCookie } from "../../util/cookieUtil";
 // 1. 초기 상태 정의 및 쿠키 로딩
 const initState = {
   email: "",
+  banInfo: null,
+  isBannedMember: false,
 };
 
 const loadMemberCookie = () => {
@@ -17,9 +19,30 @@ const loadMemberCookie = () => {
 };
 
 // 2. 비동기 로그인 처리
-export const loginPostAsync = createAsyncThunk("loginPostAsync", (param) => {
-  return loginPost(param);
-});
+export const loginPostAsync = createAsyncThunk(
+  "loginPostAsync",
+  async (param, { rejectWithValue }) => {
+    try {
+      return await loginPost(param);
+    } catch (error) {
+      // BannedMemberError인 경우 상세 정보와 함께 reject
+      if (
+        error.name === "BannedMemberError" ||
+        error.message === "MEMBER_BANNED"
+      ) {
+        return rejectWithValue({
+          type: "MEMBER_BANNED",
+          banInfo: error.banInfo,
+          message: error.message,
+          name: error.name,
+        });
+      }
+
+      // 일반 에러는 그대로 throw
+      throw error;
+    }
+  }
+);
 
 // 3. 동기 로그인/로그아웃 처리
 const loginSlice = createSlice({
@@ -28,47 +51,60 @@ const loginSlice = createSlice({
   reducers: {
     login: (state, action) => {
       const data = action.payload;
-      return { email: data.email };
+      return { email: data.email, banInfo: null, isBannedMember: false };
     },
     logout: () => {
       removeCookie("member");
       return { ...initState };
     },
-  },
-
-  // 4. 비동기 로그인 요청결과에 따라 상태 및 쿠키 업데이트
+    setBanInfo: (state, action) => {
+      state.banInfo = action.payload;
+      state.isBannedMember = true;
+    },
+    clearBanInfo: (state) => {
+      state.banInfo = null;
+      state.isBannedMember = false;
+    },
+  }, // 4. 비동기 로그인 요청결과에 따라 상태 및 쿠키 업데이트
   extraReducers: (builder) => {
     builder
       .addCase(loginPostAsync.fulfilled, (state, action) => {
         const payload = action.payload;
+
         if (!payload.error) {
           setCookie("member", JSON.stringify(payload));
         }
         return payload;
       })
       .addCase(loginPostAsync.pending, () => {
-        console.log("pending");
+        // 로딩 상태 처리
       })
       .addCase(loginPostAsync.rejected, (state, action) => {
-        console.log("rejected");
-
-        // 서버에서 반환된 에러 정보를 확인
-        const response = action.meta?.response;
-
-        // 정지된 회원의 경우 특별 처리
-        if (response?.status === 403) {
-          // 403 Forbidden 상태코드는 정지된 회원을 의미
-          console.log("정지된 회원 로그인 시도 감지");
+        // rejectWithValue로 전달된 banned member 정보 처리
+        if (action.payload && action.payload.type === "MEMBER_BANNED") {
           return {
-            ...initState,
-            error: "MEMBER_BANNED",
-            banInfo: response?.data?.banInfo,
+            ...state,
+            banInfo: action.payload.banInfo || null,
+            isBannedMember: true,
           };
         }
 
+        // BannedMemberError인 경우 상태에 ban 정보 저장 (fallback)
+        if (
+          action.error?.name === "BannedMemberError" ||
+          action.error?.message === "MEMBER_BANNED"
+        ) {
+          return {
+            ...state,
+            banInfo: action.error?.banInfo || null,
+            isBannedMember: true,
+          };
+        }
+
+        // 일반 에러인 경우 상태 유지
         return state;
       });
   },
 });
-export const { login, logout } = loginSlice.actions;
+export const { login, logout, setBanInfo, clearBanInfo } = loginSlice.actions;
 export default loginSlice.reducer;

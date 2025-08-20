@@ -204,17 +204,19 @@ public class AdminServiceImpl implements AdminService {
         
         return isBanned;
     }
-    
-    @Override
+      @Override
     public BannedDTO getCurrentBanInfo(String email) {
         log.info("회원 정지 정보 조회: email = {}", email);
         
-        Optional<Member> memberOpt = memberRepository.findByEmailAndActiveStatus(email);
+        // BANNED 상태의 회원 조회로 변경
+        Optional<Member> memberOpt = memberRepository.getWithRoles(email, MemberStatus.BANNED);
         if (memberOpt.isEmpty()) {
+            log.info("BANNED 상태의 회원을 찾을 수 없음: email = {}", email);
             return null;
         }
         
         Long memberNo = memberOpt.get().getMemberNo();
+        log.info("BANNED 회원 번호: {}", memberNo);
         Optional<Banned> activeBan = bannedRepository.findActiveBanByMemberNo(memberNo);
         
         if (activeBan.isPresent()) {
@@ -223,6 +225,7 @@ public class AdminServiceImpl implements AdminService {
             return banInfo;
         }
         
+        log.info("활성 정지 정보를 찾을 수 없음: memberNo = {}", memberNo);
         return null;
     }
     

@@ -7,6 +7,20 @@ const store = configureStore({
   reducer: {
     loginSlice: loginSlice, // 생성된 slice 를 store 에 설정
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // 비직렬화 가능한 값들을 허용하는 경로 설정
+        ignoredActionsPaths: [
+          "error",
+          "meta.arg",
+          "payload.timestamp",
+          "payload.banInfo",
+          "error.banInfo",
+        ],
+        ignoredStatePaths: ["banInfo"],
+      },
+    }),
 });
 
 export default store;

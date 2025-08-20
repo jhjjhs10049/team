@@ -1,7 +1,8 @@
 package org.zerock.mallapi.global.config;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,21 +15,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.zerock.mallapi.domain.admin.service.AdminService;
 import org.zerock.mallapi.global.security.filter.JWTCheckFilter;
 import org.zerock.mallapi.global.security.handler.APILoginFailHandler;
 import org.zerock.mallapi.global.security.handler.APILoginSuccessHandler;
 import org.zerock.mallapi.global.security.handler.CustomAccessDeniedHandler;
+import org.zerock.mallapi.global.security.CustomAuthenticationProvider;
 
 import java.util.Arrays;
 
 @Configuration
 @Log4j2
-@RequiredArgsConstructor
 @EnableMethodSecurity// 메서드 보안 활성화(@PreAuthorize, @PostAuthorize 등이 사용가능 해진다)
 public class CustomSecurityConfig {
 
-    private final AdminService adminService;
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -38,13 +39,27 @@ public class CustomSecurityConfig {
             // @Bean 으로 만든 corsConfigurationSource 추가
             httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource());
         });
-        
-        //세션 사용하지 않음
+          //세션 사용하지 않음
         http.sessionManagement(sessionConfig ->
                 sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         //csrf 토큰 사용하지 않음
-        http.csrf(config -> config.disable());        http.formLogin(config -> {
-            config.loginPage("/api/member/login");
+        http.csrf(config -> config.disable());
+
+        // HTTP 요청 권한 설정
+        http.authorizeHttpRequests(auth -> {
+            auth.requestMatchers("/api/member/login").permitAll() // 로그인 요청 허용
+                .requestMatchers("/api/member/join").permitAll() // 회원가입 허용
+                .requestMatchers("/api/member/check-**").permitAll() // 중복체크 허용
+                .requestMatchers("/api/member/kakao").permitAll() // 카카오 로그인 허용
+                .anyRequest().authenticated(); // 나머지는 인증 필요
+        });
+
+        // Custom AuthenticationProvider 등록
+        http.authenticationProvider(applicationContext.getBean(CustomAuthenticationProvider.class));        http.formLogin(config -> {
+            config.loginProcessingUrl("/api/member/login"); // 로그인 처리 URL
+            config.usernameParameter("username"); // username 파라미터 이름
+            config.passwordParameter("password"); // password 파라미터 이름
+            config.permitAll(); // 로그인 관련 모든 요청 허용
             //로그인 성공시 처리를 APILoginSuccessHandler 로 설정
             config.successHandler(apiLoginSuccessHandler());
             //로그인 실패시 처리를 APILoginFailHandler 로 설정
@@ -90,11 +105,9 @@ public class CustomSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
+    }    @Bean
     public APILoginSuccessHandler apiLoginSuccessHandler() {
-        return new APILoginSuccessHandler(adminService);
+        return new APILoginSuccessHandler();
     }
 
 }
