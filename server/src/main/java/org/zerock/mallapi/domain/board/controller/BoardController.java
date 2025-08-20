@@ -1,0 +1,176 @@
+package org.zerock.mallapi.domain.board.controller;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.zerock.mallapi.domain.board.dto.BoardDetailDto;
+import org.zerock.mallapi.domain.board.dto.BoardDto;
+import org.zerock.mallapi.domain.board.dto.BoardImageDto;
+import org.zerock.mallapi.domain.board.dto.ReplyDto;
+import org.zerock.mallapi.domain.board.entity.Board;
+import org.zerock.mallapi.domain.board.entity.BoardImage;
+import org.zerock.mallapi.domain.board.entity.Reply;
+import org.zerock.mallapi.domain.board.service.BoardService;
+import org.zerock.mallapi.domain.board.service.ReplyService;
+import org.zerock.mallapi.domain.member.dto.MemberDTO;
+import org.zerock.mallapi.domain.member.entity.Member;
+import org.zerock.mallapi.domain.member.repository.MemberRepository;
+import java.util.List;
+import java.net.URI;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/board")
+@Log4j2
+public class BoardController {
+
+        private final BoardService boardService;
+        private final ReplyService replyService;        private final MemberRepository memberRepository;
+
+        // 테스트 엔드포인트
+        @GetMapping("/test")
+        public ResponseEntity<String> test() {
+                log.info("Board 테스트 엔드포인트 호출됨");
+                return ResponseEntity.ok("Board Controller 작동 중!");
+        }
+
+        // 목록 (검색 q, page/size)
+        @GetMapping
+        public ResponseEntity<Page<BoardDto>> list(
+                        @RequestParam(required = false) String q,
+                        @RequestParam(defaultValue = "0") int page, // 0부터 시작
+                        @RequestParam(defaultValue = "10") int size) {
+
+                log.info("게시판 목록 요청 - q: {}, page: {}, size: {}", q, page, size);
+                Page<Board> result = boardService.list(page, size, q);
+                Page<BoardDto> body = result.map(
+                                b -> toBoardDto(b, boardService.getImages(b.getId())));
+                log.info("게시판 목록 응답 - 총 {}개", body.getTotalElements());
+                return ResponseEntity.ok(body);
+        }
+
+        // 단건
+        @GetMapping("/{boardId}")
+        public ResponseEntity<BoardDetailDto> get(@PathVariable Long boardId) {
+                Board b = boardService.get(boardId);
+                List<BoardImage> images = boardService.getImages(boardId); // ord ASC
+                List<Reply> replies = replyService.listAll(boardId); // createdAt ASC
+
+                return ResponseEntity.ok(toBoardDetailDto(b, images, replies));
+        }
+
+        // 생성요청 바디
+        public record CreateBoardRequest(String title, String content, List<String> images) {
+        }
+
+        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PostMapping
+        public ResponseEntity<Void> create(
+                        @RequestBody CreateBoardRequest req,
+                        @AuthenticationPrincipal MemberDTO me) {
+
+                Long writerId = memberRepository.findByEmail(me.getEmail())
+                                .map(Member::getMemberNo)
+                                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+                Long id = boardService.create(
+                                writerId,
+                                req.title(),
+                                req.content(),
+                                req.images() == null ? List.of() : req.images());
+                return ResponseEntity.created(URI.create("/api/boards/" + id)).build();
+        }
+
+        public record UpdateBoardRequest(String title, String content, List<String> images) {
+        }
+
+        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PutMapping("/{boardId}")
+        public ResponseEntity<Void> update(
+                        @PathVariable Long boardId,
+                        @RequestBody UpdateBoardRequest req,
+                        @AuthenticationPrincipal MemberDTO me) {
+
+                Long currentUserId = memberRepository.findByEmail(me.getEmail())
+                                .map(Member::getMemberNo)
+                                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+                boardService.update(
+                                boardId,
+                                req.title(),
+                                req.content(),
+                                req.images() == null ? List.of() : req.images(),
+                                currentUserId);
+                return ResponseEntity.noContent().build();
+        }
+
+        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @DeleteMapping("/{boardId}")
+        public ResponseEntity<Void> delete(
+                        @PathVariable Long boardId,
+                        @AuthenticationPrincipal MemberDTO me) {
+
+                // [김정오 수정] email → memberNo 조회 (기존 me.getMemberNo() 사용 제거)
+                Long currentUserId = memberRepository.findByEmail(me.getEmail())
+                                .map(Member::getMemberNo)
+                                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+                boolean isAdmin = me.getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+                boardService.delete(boardId, currentUserId, isAdmin);
+                return ResponseEntity.noContent().build();
+        }
+
+        private BoardDto toBoardDto(Board b, List<BoardImage> images) {
+                List<BoardImageDto> imageDtos = images.stream()
+                                .map(img -> new BoardImageDto(img.getId(), img.getFileName(), img.getOrd()))
+                                .toList();
+
+                return new BoardDto(
+                                b.getId(), // bno
+                                b.getWriter().getMemberNo(), // writerId
+                                b.getTitle(), // title
+                                b.getContent(), // content
+                                b.getWriter().getEmail(), // writerEmail
+                                b.getWriter().getNickname(), // writerName (Member 엔티티에 name 필드 있다고 가정)
+                                imageDtos,
+                                b.getCreatedAt(), // regDate
+                                b.getUpdatedAt() // modDate
+                );
+        }
+
+        private BoardDetailDto toBoardDetailDto(Board b, List<BoardImage> images, List<Reply> replies) {
+                List<BoardImageDto> imageDtos = images.stream()
+                                .map(img -> new BoardImageDto(img.getId(), img.getFileName(), img.getOrd()))
+                                .toList();
+
+                List<ReplyDto> replyDtos = replies.stream()
+                                .map(r -> new ReplyDto(
+                                                r.getId(), // id
+                                                b.getId(), // boardId
+                                                r.getWriter().getMemberNo(), // writerId
+                                                r.getWriter().getEmail(), // writerEmail
+                                                r.getContent(), // content
+                                                r.getCreatedAt(), // createdAt
+                                                r.getUpdatedAt() // updatedAt
+                                ))
+                                .toList();
+
+                return new BoardDetailDto(
+                                b.getId(),
+                                b.getWriter().getMemberNo(),
+                                b.getWriter().getEmail(),
+                                b.getTitle(),
+                                b.getContent(),
+                                b.getWriter().getNickname(), // writerName 필드 채움
+                                imageDtos,
+                                replyDtos,
+                                b.getCreatedAt(),
+                                b.getUpdatedAt());
+        }
+}

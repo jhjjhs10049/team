@@ -4,6 +4,11 @@ import memberRouter from "./memberRouter";
 import { ProtectedComponent } from "../common/config/ProtectedLogin";
 import { AdminManagerComponent } from "../common/config/ProtectedAdmin";
 
+// board
+import boardRouter from "./boardRouter";
+
+// page
+
 // import MapGymsPage from "../domain/gyms/pages/MapGymsPage.jsx";
 // import GymDetailPage from "../domain/gyms/pages/GymDetailPage.jsx";
 // import GymReviewPage from "../domain/gyms/pages/GymReviewPage.jsx";
@@ -56,6 +61,14 @@ const root = createBrowserRouter([
     path: "member",
     children: memberRouter(),
   },
+
+  // board
+  {
+    path: "board",
+    children: boardRouter(),
+  },
+
+  // page
 
   // {
   //   path: "/mapgyms",

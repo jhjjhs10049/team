@@ -89,11 +89,13 @@ const beforeRes = async (res) => {
   console.log("before return response..........");
   console.log(res); //ERROR_ACCESS_TOKEN
   const data = res.data;
-
   if (data && data.error === "ERROR_ACCESS_TOKEN") {
     // 만료된 토큰을 사용 했을 경우
 
     const memberCookieValue = getCookie("member");
+    console.log("memberCookieValue:", memberCookieValue);
+    console.log("accessToken:", memberCookieValue?.accessToken);
+    console.log("refreshToken:", memberCookieValue?.refreshToken);
 
     // accessToken 와 refreshToken 을 서버로 전송해서 새로운 토큰을 받아온다.
     const result = await refreshJWT(

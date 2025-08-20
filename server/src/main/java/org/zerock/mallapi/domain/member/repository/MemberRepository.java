@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.zerock.mallapi.domain.member.entity.Member;
 import org.zerock.mallapi.domain.member.entity.MemberStatus;
+import org.zerock.mallapi.domain.member.repository.MemberRepository;
+
 
 import java.util.Optional;
 
@@ -25,6 +27,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     
     // 닉네임 존재 여부 확인
     boolean existsByNickname(String nickname);    
+
+    // 기존 호환성을 위한 메서드
+    default Member getWithRoles(String email) {
+        return getWithRoles(email, MemberStatus.ACTIVE).orElse(null);
+    }
+
+    Optional<Member> findByEmail(String email);
     
     // MANAGER 역할의 최신 코드 조회 (1001부터 시작)
     @Query(value = "SELECT role_code FROM member WHERE role = 'MANAGER' AND role_code LIKE '1%' ORDER BY role_code DESC LIMIT 1", nativeQuery = true)
@@ -46,8 +55,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 일반 사용자와 매니저 조회 (ADMIN 제외)
     @Query("SELECT m FROM Member m WHERE m.role IN ('USER', 'MANAGER') ORDER BY m.joinedDate DESC")
     java.util.List<Member> findAllUsersAndManagers();
-      // 기존 호환성을 위한 메서드
-    default Member getWithRoles(String email) {
-        return getWithRoles(email, MemberStatus.ACTIVE).orElse(null);
-    }
 }

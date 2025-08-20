@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import static org.springframework.http.HttpMethod.GET;
 import org.zerock.mallapi.global.security.filter.JWTCheckFilter;
 import org.zerock.mallapi.global.security.handler.APILoginFailHandler;
 import org.zerock.mallapi.global.security.handler.APILoginSuccessHandler;
@@ -43,14 +44,19 @@ public class CustomSecurityConfig {
         http.sessionManagement(sessionConfig ->
                 sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         //csrf 토큰 사용하지 않음
-        http.csrf(config -> config.disable());
-
-        // HTTP 요청 권한 설정
+        http.csrf(config -> config.disable());        // HTTP 요청 권한 설정
         http.authorizeHttpRequests(auth -> {
             auth.requestMatchers("/api/member/login").permitAll() // 로그인 요청 허용
                 .requestMatchers("/api/member/join").permitAll() // 회원가입 허용
                 .requestMatchers("/api/member/check-**").permitAll() // 중복체크 허용
-                .requestMatchers("/api/member/kakao").permitAll() // 카카오 로그인 허용
+                .requestMatchers("/api/member/kakao").permitAll() // 카카오 로그인 허용                // 게시판 API - 읽기는 공개, 쓰기는 인증 필요
+                .requestMatchers(GET, "/api/board").permitAll() // 게시글 목록 조회
+                .requestMatchers(GET, "/api/board/**").permitAll() // 게시글 상세 조회
+                .requestMatchers("/api/board/**/replies/**").authenticated() // 댓글 작성/수정/삭제는 인증 필요
+                .requestMatchers("/api/board/**").authenticated() // 게시글 작성/수정/삭제는 인증 필요
+                .requestMatchers("/api/files/**").permitAll() // 파일 API 허용
+                
+                
                 .anyRequest().authenticated(); // 나머지는 인증 필요
         });
 

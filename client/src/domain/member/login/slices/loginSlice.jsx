@@ -70,8 +70,10 @@ const loginSlice = createSlice({
     builder
       .addCase(loginPostAsync.fulfilled, (state, action) => {
         const payload = action.payload;
+        console.log("로그인 성공 payload:", payload);
 
         if (!payload.error) {
+          console.log("쿠키에 저장할 데이터:", payload);
           setCookie("member", JSON.stringify(payload));
         }
         return payload;

@@ -37,12 +37,23 @@ public class JWTCheckFilter extends OncePerRequestFilter {
         //4.요청에 credentials 포함 시 (쿠키, 인증 헤더)        //Preflight 요청은 체크하지 않음
         if(request.getMethod().equals("OPTIONS")){
             return true;
+        }        String path = request.getRequestURI();
+        String method = request.getMethod();
+        
+        log.info("check uri.........." + path + " (" + method + ")");
+        
+        // api/member/, api/gyms/, api/files 경로는 체크하지 않음
+        if(path.startsWith("/api/member/") || path.startsWith("/api/gyms/") || path.startsWith("/api/files") || path.equals("/login")) {
+            log.info("JWT 필터 예외 처리됨: " + path);
+            return true;
         }
-
-        String path = request.getRequestURI();
-
-        log.info("check uri.........." + path);  // api/member/ , api/gyms/ 경로의 서버로 부터 정보를 가져오는 호출은 체크하지 않음
-        if(path.startsWith("/api/member/")|| path.startsWith("/api/gyms/")) {
+          // /api/board의 GET 요청만 체크하지 않음 (목록 조회, 상세 조회)
+        if(path.startsWith("/api/board") && "GET".equals(method)) {
+            // 하지만 댓글 작성/수정/삭제는 인증이 필요하므로 체크
+            if(path.matches(".*/replies.*")) {
+                return false; // 댓글 관련은 JWT 체크 필요
+            }
+            log.info("JWT 필터 예외 처리됨 (GET): " + path);
             return true;
         }
 
