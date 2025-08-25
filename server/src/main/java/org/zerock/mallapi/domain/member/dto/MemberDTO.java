@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @ToString   //MemberDTO 는 스프링 시큐리티에서 이용하는 타입의 객체로 만들었다.그래서 USER 를 상속
-public class MemberDTO extends User {
+public class MemberDTO extends User  {
 //USER 객체 : Spring Security 에서 제공하는 인증용 사용자 객체
 //           주로 로그인 된 사용자의 정보를 담기 위한 용도로 사용
     private Long memberNo;
@@ -113,9 +113,7 @@ public class MemberDTO extends User {
     }
     public void setJoinedDate(LocalDateTime joinedDate) {
         this.joinedDate = joinedDate;
-    }
-
-    // 현재 사용자의 정보를 Map 타입으로 반환(이후에 JWT 문자열 생성시에 사용)
+    }    // 현재 사용자의 정보를 Map 타입으로 반환(이후에 JWT 문자열 생성시에 사용)
     public Map<String , Object> getClaims() {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("memberNo", memberNo);
@@ -131,7 +129,15 @@ public class MemberDTO extends User {
         // LocalDateTime을 문자열로 변환하여 직렬화 문제 해결
         dataMap.put("modifiedDate", modifiedDate != null ? modifiedDate.toString() : null);
         dataMap.put("joinedDate", joinedDate != null ? joinedDate.toString() : null);
-        dataMap.put("roleNames", roleNames);
+        
+        // roleNames 설정 - role이 있으면 List로 변환, 없으면 빈 리스트
+        if (role != null) {
+            dataMap.put("roleNames", List.of(role.toString()));
+        } else if (roleNames != null && !roleNames.isEmpty()) {
+            dataMap.put("roleNames", roleNames);
+        } else {
+            dataMap.put("roleNames", List.of("USER")); // 기본값
+        }
 
         return dataMap;
     }

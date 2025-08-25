@@ -1,3 +1,4 @@
+홍금락선생님 요구사항
 테이블 연관관계
 ui (어떻게 동작되는지 1구간정도)
 기능 1~2개 (back + front 나눠서)
@@ -7,10 +8,18 @@ mvc패턴 +util
 폴더개수 권장은 3개로 사용
 테이블에 관련된 arraylist, set 등 이유
 
-백엔드
-1. api
-2. rest
-3. 토큰, OAuth2
+백
+api
+rest
+토큰/OAuth2
+JWT/Refresh Token
+
+프론트
+SPA
+react
+vite
+jsx
+
 
 백
 1. mpa/api
@@ -25,17 +34,28 @@ OAuth2는 카카오 api를 사용하기위해 강제로 필요하기에 넘기�
  {질문대비용 : 오페이크 토큰은 랜덤문자열로서 보안은 좋지만 세션과 비슷하게 서버상태관리가 필요하기에 확장성에 약하다.} 
 JWT (JSON Web Token) 토큰자체에 사용자 정보와 서명이 들어있음 api서버 구조와 호환이 좋으며 무상태방식으로 확장성에 용의하다. 다만 탈취위험이 크다는 단점이 있는데 이것을 Refresh Token을 추가하여 일정시간이 지날때마다 토큰을 초기화시켜주는 방식으로 최대한 방어하였다.
 
+
+
 프론트
 1. MPA/SPA
 MPA 방식은 JSP나 XML 기반 템플릿을 사용해 화면을 구성했는데, 이는 설정이 복잡하고 프론트와 백엔드 코드가 뒤섞여 협업과 유지보수에 불리했습니다. 또한 서버가 모든 화면을 처리해야 하므로 서버 부하가 크게 걸리는 문제도 있었습니다. 반면 SPA 방식은 다양한 기기에 유연하게 대응할 수 있고, 앱처럼 부드러운 화면 전환과 높은 확장성을 제공하기 때문에 결국 SPA 방식을 선택하게 되었습니다
 2. react, vue, angular 
 3. vite, next.js
-
 4. js, jsx, ts, tsx
 
-폴더구조
-1. 
 
+폴더구조
+1. 기능별 구조
+2. 카멜표기법
+
+ERD 스키마구조 (테이블 관계도) 설명 
+
+기능
+회원가입/로그인/마이페이지/관리자페이지
+게시판
+gym map(혁준씨 메인기능)
+
+* 기능소개하면서 디테일 + 코드상 문제있었던거 각각 1개씩 정도 설명필요
 
 현재 상황은, 로그인되지 않았거나 차단(banned)된 사용자가 로그인 시도를 할 경우, 이를 거부해야 하는 케이스입니다.
 
@@ -76,4 +96,38 @@ if (error.message === "MEMBER_BANNED")
 
 교훈:
 Redux Toolkit을 사용할 때는 에러 객체의 커스텀 속성이 직렬화 과정에서 손실될 수 있다는 점을 항상 염두에 두어야 합니다!
+
+
+================================================================
+
+🔐 통일된 보안 설정 구조
+1. JWTCheckFilter (1차 필터링)
+JWT 토큰 검증 및 인증 처리
+/api/member/refresh 경로 예외 처리
+유효한 토큰을 가진 사용자만 통과
+2. CustomSecurityConfig (2차 URL 레벨 보안)
+URL 패턴별 접근 권한 설정
+permitAll(): 로그인, 회원가입, 토큰 리프레시 등
+authenticated(): 게시글 작성/수정/삭제, 댓글 등
+hasAnyRole('ADMIN','MANAGER'): 관리자 API
+3. @PreAuthorize (3차 메서드 레벨 보안)
+통일된 패턴:
+
+일반 기능: @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
+
+BoardController (게시글 작성/수정/삭제)
+ReplyController (댓글 작성/수정/삭제)
+FileController (파일 업로드)
+MemberController (마이페이지)
+SocialController (마이페이지 수정)
+관리자 기능: @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+
+AdminController 대부분 메서드
+최고 관리자 전용: @PreAuthorize("hasRole('ADMIN')")
+
+AdminController의 권한 변경 메서드
+4. 프론트엔드 라우트 보호
+ProtectedLogin: 로그인 필요한 페이지 보호
+ProtectedAdmin: 관리자 권한 필요한 페이지 보호
+BoardPr
 

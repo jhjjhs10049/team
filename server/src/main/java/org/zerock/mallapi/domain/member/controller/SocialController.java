@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -83,9 +84,9 @@ public class SocialController {    private final MemberService memberService;
         } catch (Exception e) {
             log.error("카카오 로그인 처리 중 오류 발생", e);
             return ResponseEntity.badRequest().body(Map.of("error", "KAKAO_LOGIN_ERROR", "message", e.getMessage()));
-        }
-    }
+        }    }
 
+    @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
     @PutMapping("/api/member/modify")
     public Map<String ,String > modify(@RequestBody MemberModifyDTO memberModifyDTO){
 

@@ -1,18 +1,16 @@
+import { PAGE_UTILS } from "../../../../common/config/pageConfig";
+
 const BoardPaginationComponent = ({
   currentPage,
   totalPages,
   onPageChange,
+  pageConfig,
 }) => {
-  const getPageNumbers = () => {
-    const pages = [];
-    const startPage = Math.max(0, currentPage - 2);
-    const endPage = Math.min(totalPages - 1, currentPage + 2);
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
+  const pageGroup = PAGE_UTILS.calculatePageGroup(
+    currentPage,
+    totalPages,
+    pageConfig?.PAGE_GROUP_SIZE || 5
+  );
 
   if (totalPages <= 1) return null;
 
@@ -26,6 +24,15 @@ const BoardPaginationComponent = ({
         처음
       </button>
 
+      {pageGroup.hasPrev && (
+        <button
+          onClick={() => onPageChange(pageGroup.start - 1)}
+          className="px-3 py-2 text-sm border rounded hover:bg-gray-50"
+        >
+          ...
+        </button>
+      )}
+
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 0}
@@ -34,7 +41,7 @@ const BoardPaginationComponent = ({
         이전
       </button>
 
-      {getPageNumbers().map((pageNum) => (
+      {pageGroup.pages.map((pageNum) => (
         <button
           key={pageNum}
           onClick={() => onPageChange(pageNum)}
@@ -55,6 +62,15 @@ const BoardPaginationComponent = ({
       >
         다음
       </button>
+
+      {pageGroup.hasNext && (
+        <button
+          onClick={() => onPageChange(pageGroup.end)}
+          className="px-3 py-2 text-sm border rounded hover:bg-gray-50"
+        >
+          ...
+        </button>
+      )}
 
       <button
         onClick={() => onPageChange(totalPages - 1)}

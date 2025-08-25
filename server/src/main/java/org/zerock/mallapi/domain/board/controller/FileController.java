@@ -1,5 +1,6 @@
 package org.zerock.mallapi.domain.board.controller;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -15,24 +16,25 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/files")
+@Log4j2
 public class FileController {
 
     @Value("${org.zerock.upload.path}") // 프로퍼티지 확인
-    private String uploadDir;
-
-    // [업로드] 이미지 MIME만 허용, 저장된 파일명 리스트 반환
+    private String uploadDir;    // [업로드] 이미지 MIME만 허용, 저장된 파일명 리스트 반환    @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<String> upload(@RequestPart("files") List<MultipartFile> files) throws Exception {
         Files.createDirectories(Path.of(uploadDir));
 
         List<String> saved = new ArrayList<>();
         for (MultipartFile f : files) {
-            if (f.isEmpty())
+                  if (f.isEmpty()) {
                 continue;
+            }
 
             String ct = Optional.ofNullable(f.getContentType()).orElse("").toLowerCase();
-            if (!ct.startsWith("image/"))
+            if (!ct.startsWith("image/")) {
                 continue; // 이미지가 아니면 건너뜀
+            }
 
             String ext = Optional.ofNullable(f.getOriginalFilename())
                     .filter(n -> n.contains("."))
@@ -43,6 +45,7 @@ public class FileController {
             f.transferTo(Path.of(uploadDir, newName)); // 제일 쉬운 저장 방식
             saved.add(newName);
         }
+        
         return saved;
     }
 

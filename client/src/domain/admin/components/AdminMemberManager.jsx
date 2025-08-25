@@ -2,14 +2,22 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getAllMembers } from "../api/adminMemberApi";
 import MemberActionModal from "./MemberActionModal";
 import BanHistoryModal from "./BanHistoryModal";
+import AdminSearchComponent from "./AdminSearchComponent";
 import PageComponent from "../../../common/components/PageComponent";
 import useCustomLogin from "../../member/login/hooks/useCustomLogin";
 
 const AdminMemberManager = () => {
   const { loginState } = useCustomLogin();
   const [members, setMembers] = useState([]);
+  const [filteredMembers, setFilteredMembers] = useState([]); // 필터링된 회원 목록
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // 검색 상태
+  const [searchParams, setSearchParams] = useState({
+    keyword: "",
+    type: "all",
+  });
 
   // 페이징 설정 (25개씩)
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,46 +34,50 @@ const AdminMemberManager = () => {
     isOpen: false,
     memberNo: null,
   }); // 회원 목록 조회
-  const fetchMembers = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const fetchMembers = useCallback(
+    async (searchParams = null) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const userRole = loginState?.roleNames?.[0];
+        console.log("API 호출 시 사용할 권한:", userRole);
+        console.log("검색 파라미터:", searchParams);
 
-      // loginState 구조에 따라 role 접근 방법을 조정
-      const userRole = loginState?.role || loginState?.roleNames?.[0];
-      console.log("API 호출 시 사용할 권한:", userRole);
+        // 서버 사이드 검색을 위해 검색 파라미터 전달
+        const data = await getAllMembers(userRole, searchParams);
 
-      const data = await getAllMembers(userRole);
-
-      // API에서 이미 배열을 반환하도록 처리했으므로 간단히 확인
-      if (Array.isArray(data)) {
-        setMembers(data);
-        console.log("회원 목록 조회 성공:", data.length, "건");
-      } else {
-        console.error("예상하지 못한 API 응답:", data);
+        // API에서 이미 배열을 반환하도록 처리했으므로 간단히 확인
+        if (Array.isArray(data)) {
+          setMembers(data);
+          setFilteredMembers(data); // 서버에서 이미 필터링된 데이터
+          console.log("회원 목록 조회 성공:", data.length, "건");
+        } else {
+          console.error("예상하지 못한 API 응답:", data);
+          setMembers([]);
+          setFilteredMembers([]);
+          setError("회원 목록 데이터 형식이 올바르지 않습니다.");
+        }
+      } catch (err) {
+        setError(err.message || "회원 목록을 불러오는데 실패했습니다.");
+        console.error("회원 목록 조회 오류:", err);
         setMembers([]);
-        setError("회원 목록 데이터 형식이 올바르지 않습니다.");
+        setFilteredMembers([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message || "회원 목록을 불러오는데 실패했습니다.");
-      console.error("회원 목록 조회 오류:", err);
-      setMembers([]); // 오류 시 빈 배열로 설정
-    } finally {
-      setLoading(false);
-    }
-  }, [loginState]);
+    },
+    [loginState]
+  );
   useEffect(() => {
     console.log("=== AdminMemberManager 초기화 ===");
-    console.log("현재 로그인 상태:", loginState);
-
-    // loginState 구조에 따라 role 접근 방법을 조정
-    const userRole = loginState?.role || loginState?.roleNames?.[0];
+    console.log("현재 로그인 상태:", loginState); // loginState 구조에 따라 role 접근 방법을 조정
+    const userRole = loginState?.roleNames?.[0];
     console.log("사용자 권한:", userRole);
     console.log("이메일:", loginState?.email);
-
     if (!loginState) {
       console.log("로그인 상태가 없습니다.");
       setMembers([]);
+      setFilteredMembers([]);
       setError("로그인이 필요합니다.");
       return;
     }
@@ -73,6 +85,7 @@ const AdminMemberManager = () => {
     if (!userRole) {
       console.log("사용자 권한을 찾을 수 없습니다.");
       setMembers([]);
+      setFilteredMembers([]);
       setError("사용자 권한을 확인할 수 없습니다.");
       return;
     }
@@ -80,6 +93,7 @@ const AdminMemberManager = () => {
     if (userRole !== "ADMIN" && userRole !== "MANAGER") {
       console.log("관리자 권한이 없습니다:", userRole);
       setMembers([]);
+      setFilteredMembers([]);
       setError("관리자 권한이 필요합니다.");
       return;
     }
@@ -87,21 +101,76 @@ const AdminMemberManager = () => {
     console.log("권한 확인됨, 회원 목록 조회 시작");
     fetchMembers();
   }, [loginState, fetchMembers]);
+
+  // 검색 필터링 로직
+  const filterMembers = useCallback((memberList, searchParams) => {
+    if (!searchParams.keyword || searchParams.type === "all") {
+      return memberList;
+    }
+
+    const keyword = searchParams.keyword.toLowerCase();
+
+    return memberList.filter((member) => {
+      switch (searchParams.type) {
+        case "email":
+          return member.email?.toLowerCase().includes(keyword);
+        case "nickname":
+          return member.nickname?.toLowerCase().includes(keyword);
+        case "phone":
+          return member.phone?.toLowerCase().includes(keyword);
+        case "status":
+          return member.active?.toLowerCase().includes(keyword);
+        case "role":
+          return (
+            member.role?.toLowerCase().includes(keyword) ||
+            member.roleCode?.toLowerCase().includes(keyword)
+          );
+        default:
+          // 전체 검색
+          return (
+            member.email?.toLowerCase().includes(keyword) ||
+            member.nickname?.toLowerCase().includes(keyword) ||
+            member.phone?.toLowerCase().includes(keyword) ||
+            member.active?.toLowerCase().includes(keyword) ||
+            member.role?.toLowerCase().includes(keyword) ||
+            member.roleCode?.toLowerCase().includes(keyword)
+          );
+      }
+    });
+  }, []);
+  // 검색 핸들러 (서버사이드 검색)
+  const handleSearch = useCallback(
+    async (newSearchParams) => {
+      setSearchParams(newSearchParams);
+      setCurrentPage(1); // 검색 시 첫 페이지로 이동
+
+      // 서버에서 검색 수행
+      await fetchMembers(newSearchParams);
+    },
+    [fetchMembers]
+  );
+
+  // members 변경 시 필터링 적용
+  useEffect(() => {
+    const filtered = filterMembers(members, searchParams);
+    setFilteredMembers(filtered);
+  }, [members, searchParams, filterMembers]);
+
   // 현재 페이지의 회원 데이터
   const getCurrentPageData = () => {
-    // members가 배열인지 확인
-    if (!Array.isArray(members)) {
-      console.error("members가 배열이 아닙니다:", members);
+    // filteredMembers를 사용하도록 변경
+    if (!Array.isArray(filteredMembers)) {
+      console.error("filteredMembers가 배열이 아닙니다:", filteredMembers);
       return [];
     }
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return members.slice(startIndex, endIndex);
+    return filteredMembers.slice(startIndex, endIndex);
   };
 
-  // 전체 페이지 수
+  // 전체 페이지 수 (필터링된 결과 기준)
   const totalPages = Math.ceil(
-    (Array.isArray(members) ? members.length : 0) / pageSize
+    (Array.isArray(filteredMembers) ? filteredMembers.length : 0) / pageSize
   );
 
   // 페이지 변경 핸들러
@@ -188,16 +257,28 @@ const AdminMemberManager = () => {
   }
 
   const currentPageData = getCurrentPageData();
-
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">회원 관리</h2>{" "}
+        <h2 className="text-2xl font-bold mb-2">회원 관리</h2>
         <p className="text-gray-600">
-          총 {Array.isArray(members) ? members.length : 0}명의 회원 | 페이지당{" "}
-          {pageSize}개 표시
+          총 {Array.isArray(members) ? members.length : 0}명의 회원
+          {searchParams.keyword && (
+            <span className="text-blue-600">
+              {" "}
+              | 검색 결과:{" "}
+              {Array.isArray(filteredMembers) ? filteredMembers.length : 0}명
+            </span>
+          )}{" "}
+          | 페이지당 {pageSize}개 표시
         </p>
       </div>
+      {/* 검색 컴포넌트 */}
+      <AdminSearchComponent
+        onSearch={handleSearch}
+        loading={loading}
+        userRole={loginState?.roleNames?.[0]}
+      />
       {/* 회원 테이블 */}
       <div className="overflow-x-auto bg-white shadow-md rounded-lg">
         <table className="min-w-full table-auto">
@@ -267,15 +348,15 @@ const AdminMemberManager = () => {
                     {member.active === "BANNED" && "정지"}
                     {member.active === "DELETED" && "삭제"}
                   </span>
-                </td>
+                </td>{" "}
                 <td
                   className={`px-4 py-4 whitespace-nowrap text-sm ${
-                    loginState.role === "ADMIN"
+                    loginState.roleNames?.[0] === "ADMIN"
                       ? "cursor-pointer text-blue-600 hover:text-blue-800"
                       : "text-gray-900"
                   }`}
                   onClick={() =>
-                    loginState.role === "ADMIN" &&
+                    loginState.roleNames?.[0] === "ADMIN" &&
                     handleCellClick(member, "role")
                   }
                 >
@@ -321,7 +402,7 @@ const AdminMemberManager = () => {
               },
               prev: currentPage > 1,
               next: currentPage < totalPages,
-              totalCount: members.length,
+              totalCount: filteredMembers.length,
               prevPage: currentPage > 1 ? currentPage - 1 : 1,
               nextPage: currentPage < totalPages ? currentPage + 1 : totalPages,
               totalPage: totalPages,

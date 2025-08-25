@@ -3,6 +3,7 @@ package org.zerock.mallapi.domain.member.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.zerock.mallapi.domain.member.dto.MemberDTO;
 import org.zerock.mallapi.domain.member.dto.MemberJoinDTO;
@@ -64,9 +65,8 @@ public class MemberController {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "닉네임 중복 확인 중 오류가 발생했습니다."));
         }
-    }
-
-    // 마이페이지 - 회원 정보 조회
+    }    // 마이페이지 - 회원 정보 조회
+    @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
     @GetMapping("/mypage")
     public ResponseEntity<?> getMyPage(@RequestParam String email) {
         try {
@@ -76,9 +76,9 @@ public class MemberController {
             log.error("MyPage get error: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원 정보 조회 중 오류가 발생했습니다."));
-        }
-    }    
+        }    }    
     // 마이페이지 - 회원 정보 수정
+    @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
     @PutMapping("/mypage")
     public ResponseEntity<?> updateMyPage(@RequestBody MemberModifyDTO memberModifyDTO) {
         try {
@@ -145,8 +145,8 @@ public class MemberController {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원탈퇴 중 오류가 발생했습니다."));
         }
-    }
-      // 기존 MANAGER들에게 roleCode 부여 (관리자 전용)
+    }      // 기존 MANAGER들에게 roleCode 부여 (관리자 전용)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/assign-manager-codes")
     public ResponseEntity<?> assignManagerCodes() {
         try {
@@ -160,10 +160,10 @@ public class MemberController {
             log.error("Manager code assignment error: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "roleCode 부여 중 오류가 발생했습니다: " + e.getMessage()));
-        }
-    }
+        }    }
     
     // 특정 회원을 MANAGER로 승격 (관리자 전용)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/promote-manager")
     public ResponseEntity<?> promoteToManager(@RequestParam String email) {
         try {
@@ -181,10 +181,10 @@ public class MemberController {
             log.error("Manager promotion error: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "MANAGER 승격 중 오류가 발생했습니다."));
-        }
-    }
+        }    }
     
     // 특정 회원의 MANAGER 권한 해제 (관리자 전용)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/demote-manager")
     public ResponseEntity<?> demoteFromManager(@RequestParam String email) {
         try {

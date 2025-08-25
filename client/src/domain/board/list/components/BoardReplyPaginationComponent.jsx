@@ -1,17 +1,26 @@
 import { useState } from "react";
+import { REPLY_CONFIG } from "../../../../common/config/pageConfig";
+import BoardPaginationComponent from "./BoardPaginationComponent";
 
-const BoardReplyComponent = ({
-  replies,
+const BoardReplyPaginationComponent = ({
+  replyData,
+  currentPage,
   myEmail,
   isAdmin,
   onAddReply,
   onUpdateReply,
   onDeleteReply,
+  onPageChange,
   loading,
 }) => {
   const [replyText, setReplyText] = useState("");
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editingReplyText, setEditingReplyText] = useState("");
+
+  // 서버에서 받은 페이징 데이터 사용
+  const replies = replyData?.content || [];
+  const totalElements = replyData?.totalElements || 0;
+  const totalPages = replyData?.totalPages || 0;
 
   const handleAddReply = async () => {
     if (!replyText.trim()) {
@@ -54,9 +63,8 @@ const BoardReplyComponent = ({
 
   return (
     <div className="mt-8">
-      <h3 className="text-lg font-semibold mb-4">
-        댓글 ({replies?.length || 0})
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">댓글 ({totalElements})</h3>
+
       {/* 댓글 작성 */}
       {myEmail && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -79,7 +87,8 @@ const BoardReplyComponent = ({
           </div>
         </div>
       )}
-      {/* 댓글 목록 */}{" "}
+
+      {/* 댓글 목록 */}
       <div className="space-y-4">
         {replies && replies.length > 0 ? (
           replies.map((reply) => (
@@ -90,12 +99,13 @@ const BoardReplyComponent = ({
                     {reply.writerEmail || `#${reply.writerId}` || "익명"}
                   </span>
                   <span className="text-sm text-gray-500">
-                    {new Date(reply.regDate).toLocaleString()}
+                    {new Date(reply.createdAt).toLocaleString()}
                   </span>
-                  {reply.modDate !== reply.regDate && (
+                  {reply.updatedAt !== reply.createdAt && (
                     <span className="text-xs text-gray-400">(수정됨)</span>
                   )}
-                </div>{" "}
+                </div>
+
                 {/* 권한별 버튼 분리: 수정은 작성자만, 삭제는 작성자 또는 관리자 */}
                 <div className="flex gap-2">
                   {editingReplyId === reply.id ? (
@@ -161,8 +171,27 @@ const BoardReplyComponent = ({
           </div>
         )}
       </div>
+
+      {/* 페이징 컴포넌트 */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <BoardPaginationComponent
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            pageGroupSize={REPLY_CONFIG.PAGE_GROUP_SIZE}
+          />
+        </div>
+      )}
+
+      {/* 로딩 표시 */}
+      {loading && (
+        <div className="text-center py-4 text-gray-500">
+          댓글을 불러오는 중...
+        </div>
+      )}
     </div>
   );
 };
 
-export default BoardReplyComponent;
+export default BoardReplyPaginationComponent;

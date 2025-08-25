@@ -123,9 +123,7 @@ public class BoardServiceImpl implements BoardService {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다. id=" + boardId));
         return boardImageRepository.findByBoardOrderByOrdAsc(board);
-    }
-
-    @Override
+    }    @Override
     public Page<Board> list(int page, int size, String keyword) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         if (keyword == null || keyword.isBlank()) {
@@ -133,5 +131,26 @@ public class BoardServiceImpl implements BoardService {
         }
         return boardRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
                 keyword, keyword, pageable);
+    }
+
+    @Override
+    public Page<Board> list(int page, int size, String keyword, String type) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        
+        // 검색어가 없으면 전체 목록 반환
+        if (keyword == null || keyword.isBlank()) {
+            return boardRepository.findAll(pageable);
+        }
+        
+        // 검색 타입에 따른 분기 처리
+        return switch (type) {
+            case "title" -> boardRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+            case "content" -> boardRepository.findByContentContainingIgnoreCase(keyword, pageable);
+            case "writer" -> boardRepository.findByWriter_EmailContainingIgnoreCase(keyword, pageable);
+            case "all" -> boardRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                    keyword, keyword, pageable);
+            default -> boardRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                    keyword, keyword, pageable);
+        };
     }
 }

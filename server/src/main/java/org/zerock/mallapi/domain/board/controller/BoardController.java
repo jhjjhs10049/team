@@ -36,17 +36,16 @@ public class BoardController {
         public ResponseEntity<String> test() {
                 log.info("Board 테스트 엔드포인트 호출됨");
                 return ResponseEntity.ok("Board Controller 작동 중!");
-        }
-
-        // 목록 (검색 q, page/size)
+        }        // 목록 (검색 q, type, page/size)
         @GetMapping
         public ResponseEntity<Page<BoardDto>> list(
                         @RequestParam(required = false) String q,
+                        @RequestParam(required = false, defaultValue = "all") String type,
                         @RequestParam(defaultValue = "0") int page, // 0부터 시작
                         @RequestParam(defaultValue = "10") int size) {
 
-                log.info("게시판 목록 요청 - q: {}, page: {}, size: {}", q, page, size);
-                Page<Board> result = boardService.list(page, size, q);
+                log.info("게시판 목록 요청 - q: {}, type: {}, page: {}, size: {}", q, type, page, size);
+                Page<Board> result = boardService.list(page, size, q, type);
                 Page<BoardDto> body = result.map(
                                 b -> toBoardDto(b, boardService.getImages(b.getId())));
                 log.info("게시판 목록 응답 - 총 {}개", body.getTotalElements());
@@ -65,13 +64,15 @@ public class BoardController {
 
         // 생성요청 바디
         public record CreateBoardRequest(String title, String content, List<String> images) {
-        }
-
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        }        
+        @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
         @PostMapping
         public ResponseEntity<Void> create(
                         @RequestBody CreateBoardRequest req,
                         @AuthenticationPrincipal MemberDTO me) {
+
+                log.info("=== 게시글 생성 요청 ===");
+                log.info("요청자: {}, 제목: {}", me.getEmail(), req.title());
 
                 Long writerId = memberRepository.findByEmail(me.getEmail())
                                 .map(Member::getMemberNo)
@@ -82,13 +83,13 @@ public class BoardController {
                                 req.title(),
                                 req.content(),
                                 req.images() == null ? List.of() : req.images());
+                
+                log.info("=== 게시글 생성 완료, ID: {} ===", id);
                 return ResponseEntity.created(URI.create("/api/boards/" + id)).build();
         }
 
         public record UpdateBoardRequest(String title, String content, List<String> images) {
-        }
-
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        }        @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
         @PutMapping("/{boardId}")
         public ResponseEntity<Void> update(
                         @PathVariable Long boardId,
@@ -106,9 +107,7 @@ public class BoardController {
                                 req.images() == null ? List.of() : req.images(),
                                 currentUserId);
                 return ResponseEntity.noContent().build();
-        }
-
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        }        @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')")
         @DeleteMapping("/{boardId}")
         public ResponseEntity<Void> delete(
                         @PathVariable Long boardId,

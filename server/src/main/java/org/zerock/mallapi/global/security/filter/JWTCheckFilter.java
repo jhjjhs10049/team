@@ -39,24 +39,36 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             return true;
         }        String path = request.getRequestURI();
         String method = request.getMethod();
+          log.info("check uri.........." + path + " (" + method + ")");
         
-        log.info("check uri.........." + path + " (" + method + ")");
-        
-        // api/member/, api/gyms/, api/files 경로는 체크하지 않음
-        if(path.startsWith("/api/member/") || path.startsWith("/api/gyms/") || path.startsWith("/api/files") || path.equals("/login")) {
+        // 인증이 필요 없는 member API들만 명시적으로 허용
+        if(path.equals("/api/member/login") ||
+           path.equals("/api/member/join") ||
+           path.equals("/api/member/kakao") ||
+           path.equals("/api/member/refresh") ||
+           path.startsWith("/api/member/check-") ||
+           path.startsWith("/api/member/verify-password") ||
+           path.startsWith("/api/member/withdraw") ||
+           
+           // 기타 공개 API
+           path.startsWith("/api/gyms/") || 
+           path.startsWith("/api/files") || 
+           path.equals("/login")) {
             log.info("JWT 필터 예외 처리됨: " + path);
             return true;
-        }
-          // /api/board의 GET 요청만 체크하지 않음 (목록 조회, 상세 조회)
+        }        // /api/board의 GET 요청만 체크하지 않음 (목록 조회, 상세 조회)
         if(path.startsWith("/api/board") && "GET".equals(method)) {
-            // 하지만 댓글 작성/수정/삭제는 인증이 필요하므로 체크
-            if(path.matches(".*/replies.*")) {
+            // 하지만 댓글 관련은 인증이 필요하므로 체크
+            if(path.contains("/replies")) {
+                log.info("JWT 필터 적용됨 (댓글 조회): " + path);
                 return false; // 댓글 관련은 JWT 체크 필요
             }
-            log.info("JWT 필터 예외 처리됨 (GET): " + path);
+            log.info("JWT 필터 예외 처리됨 (게시판 조회): " + path);
             return true;
         }
 
+        // 나머지 /api/board 요청 (POST, PUT, DELETE)는 모두 JWT 체크 필요
+        log.info("JWT 필터 적용됨: " + path);
         return false;
     }    
     @Override
@@ -77,12 +89,10 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             // Bearer + 공백문자1칸 을 빼고 가져 와야 하므로
             // 공백문자1칸의 인덱스 값이 6 이므로 (인덱스는 0부터 시작)
             // substring() 의 매개 변수값을 7로 하였다.
-            String accesstoken = authHeaderStr.substring(7);
-            //토큰의 유효성 검사
+            String accesstoken = authHeaderStr.substring(7);            //토큰의 유효성 검사
             Map<String, Object> claims = JWTUtil.validateToken(accesstoken);
 
             log.info("JWT claims: " + claims);
-
 
             //JWT 토큰 내에는 인증에 필요한 모든 정보를 가지고 있다.
             //이를 활용해서 시큐리티에 필요한 객체(MemberDTO)를 구성하자.
@@ -92,9 +102,13 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             Boolean social = (Boolean) claims.get("social");
             
             List<?> rawRoleNames = (List<?>) claims.get("roleNames");
+            log.info("Raw roleNames from JWT: " + rawRoleNames);
+            
             List<String> roleNames = rawRoleNames.stream()
                     .map(Object::toString)
                     .toList();
+            
+            log.info("Processed roleNames: " + roleNames);
 
             MemberDTO memberDTO = new MemberDTO(email, pw, nickname,
                     social.booleanValue(), roleNames);  //social 만써도 될거 같은데.. 나중에 테스트
@@ -127,11 +141,6 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             response.setContentType("application/json; charset=UTF-8");
             PrintWriter printWriter = response.getWriter();
             printWriter.println(msg);
-            printWriter.close();
-        }
-
-
-        
-        //filterChain.doFilter(request, response); // 통과
+            printWriter.close();        }
     }
 }

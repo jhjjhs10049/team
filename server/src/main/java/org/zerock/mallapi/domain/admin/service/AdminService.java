@@ -9,14 +9,19 @@ import org.zerock.mallapi.domain.member.entity.MemberRole;
 import java.util.List;
 
 @Transactional
-public interface AdminService {
-    
-    /**
+public interface AdminService {    /**
      * 회원 목록 조회 (관리자/매니저 권한에 따라 필터링)
      * ADMIN: USER + MANAGER 조회 가능
      * MANAGER: USER만 조회 가능
      */
     List<AdminMemberDTO> getAllMembers(MemberRole adminRole);
+
+    /**
+     * 회원 목록 조회 (검색 기능 포함)
+     * ADMIN: USER + MANAGER 조회 가능
+     * MANAGER: USER만 조회 가능
+     */
+    List<AdminMemberDTO> getAllMembers(MemberRole adminRole, String keyword, String searchType);
     
     /**
      * 회원 정지

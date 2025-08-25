@@ -7,10 +7,8 @@ const AdminPage = () => {
   const { loginState } = useCustomLogin();
 
   console.log("AdminPage 로그인 상태:", loginState); // 디버깅용
-
   // 관리자/매니저 권한 확인
-  // loginState 구조에 따라 role 접근 방법을 조정
-  const userRole = loginState?.role || loginState?.roleNames?.[0];
+  const userRole = loginState?.roleNames?.[0];
 
   if (
     !loginState ||
@@ -43,10 +41,10 @@ const AdminPage = () => {
       <div className="py-6 bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">관리자 페이지</h1>
+            <h1 className="text-3xl font-bold text-gray-900">관리자 페이지</h1>{" "}
             <p className="mt-2 text-gray-600">
-              {loginState.role === "ADMIN" ? "최고 관리자" : "매니저"} 권한으로
-              로그인됨
+              {loginState.roleNames?.[0] === "ADMIN" ? "최고 관리자" : "매니저"}{" "}
+              권한으로 로그인됨
             </p>
           </div>
 

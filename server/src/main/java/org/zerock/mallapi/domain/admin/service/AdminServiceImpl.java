@@ -24,9 +24,7 @@ import java.util.stream.Collectors;
 public class AdminServiceImpl implements AdminService {
     
     private final MemberRepository memberRepository;
-    private final BannedRepository bannedRepository;
-    
-    @Override
+    private final BannedRepository bannedRepository;    @Override
     public List<AdminMemberDTO> getAllMembers(MemberRole adminRole) {
         log.info("회원 목록 조회 요청: adminRole = {}", adminRole);
         
@@ -45,6 +43,72 @@ public class AdminServiceImpl implements AdminService {
                 .map(this::convertToAdminMemberDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<AdminMemberDTO> getAllMembers(MemberRole adminRole, String keyword, String searchType) {
+        log.info("회원 검색 요청: adminRole = {}, keyword = {}, searchType = {}", adminRole, keyword, searchType);
+        
+        // 검색어가 없으면 전체 조회
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getAllMembers(adminRole);
+        }
+        
+        List<Member> members;
+        
+        // ADMIN이면 MANAGER도 포함, MANAGER면 USER만
+        if (adminRole == MemberRole.ADMIN) {
+            members = memberRepository.findAllUsersAndManagers();
+        } else {
+            members = memberRepository.findAllUsers();
+        }
+        
+        // 검색 필터링
+        String searchKeyword = keyword.trim().toLowerCase();
+        List<Member> filteredMembers = members.stream()
+                .filter(member -> matchesSearchCriteria(member, searchKeyword, searchType))
+                .collect(Collectors.toList());
+        
+        log.info("검색 결과: {} 건 (전체 {} 건 중)", filteredMembers.size(), members.size());
+        
+        return filteredMembers.stream()
+                .map(this::convertToAdminMemberDTO)
+                .collect(Collectors.toList());
+    }
+
+    // 검색 조건 매칭 헬퍼 메서드
+    private boolean matchesSearchCriteria(Member member, String keyword, String searchType) {
+        if (searchType == null) {
+            searchType = "all";
+        }
+        
+        switch (searchType.toLowerCase()) {
+            case "email":
+                return member.getEmail() != null && 
+                       member.getEmail().toLowerCase().contains(keyword);
+            case "nickname":
+                return member.getNickname() != null && 
+                       member.getNickname().toLowerCase().contains(keyword);
+            case "phone":
+                return member.getPhone() != null && 
+                       member.getPhone().toLowerCase().contains(keyword);
+            case "status":
+                return member.getActive() != null && 
+                       member.getActive().toString().toLowerCase().contains(keyword);
+            case "role":
+                return (member.getRole() != null && 
+                        member.getRole().toString().toLowerCase().contains(keyword)) ||
+                       (member.getRoleCode() != null && 
+                        member.getRoleCode().toLowerCase().contains(keyword));
+            case "all":
+            default:
+                // 전체 검색
+                return (member.getEmail() != null && member.getEmail().toLowerCase().contains(keyword)) ||
+                       (member.getNickname() != null && member.getNickname().toLowerCase().contains(keyword)) ||
+                       (member.getPhone() != null && member.getPhone().toLowerCase().contains(keyword)) ||
+                       (member.getActive() != null && member.getActive().toString().toLowerCase().contains(keyword)) ||
+                       (member.getRole() != null && member.getRole().toString().toLowerCase().contains(keyword)) ||
+                       (member.getRoleCode() != null && member.getRoleCode().toLowerCase().contains(keyword));
+        }    }
     
     @Override
     public void banMember(BanRequestDTO banRequest) {

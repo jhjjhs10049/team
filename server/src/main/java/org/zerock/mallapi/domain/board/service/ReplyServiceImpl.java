@@ -1,6 +1,7 @@
 package org.zerock.mallapi.domain.board.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 @Transactional
+@Log4j2
 public class ReplyServiceImpl implements ReplyService {
 
     private final ReplyRepository replyRepository;
@@ -30,10 +32,11 @@ public class ReplyServiceImpl implements ReplyService {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다. id=" + boardId));
         return replyRepository.findByBoard(board, pageable);
-    }
-
-    @Override
+    }    @Override
     public Long create(Long boardId, Long writerId, String content) {
+        log.info("=== 댓글 생성 시작 ===");
+        log.info("boardId: {}, writerId: {}, content: {}", boardId, writerId, content);
+        
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 없습니다. id=" + boardId));
         Member writer = memberRepository.findById(writerId)
@@ -45,7 +48,11 @@ public class ReplyServiceImpl implements ReplyService {
                 .content(content)
                 .build();
 
-        return replyRepository.save(reply).getId();
+        Reply savedReply = replyRepository.save(reply);
+        log.info("=== 댓글 저장 완료 ===");
+        log.info("저장된 댓글 ID: {}", savedReply.getId());
+        
+        return savedReply.getId();
     }
 
     @Override

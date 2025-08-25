@@ -4,10 +4,11 @@ import { getCookie } from "../../member/util/cookieUtil";
 const prefix = `/api/admin/member`; // baseURL은 axios 인스턴스에서 설정되므로 상대 경로 사용
 
 // 회원 목록 조회 (admin은 manager도 볼 수 있음)
-export const getAllMembers = async (adminRole) => {
+export const getAllMembers = async (adminRole, searchParams = null) => {
   try {
     console.log("=== 관리자 API 호출 시작 ===");
     console.log("요청 권한:", adminRole);
+    console.log("검색 파라미터:", searchParams);
 
     // 쿠키에서 토큰 확인
     const memberInfo = getCookie("member");
@@ -17,9 +18,16 @@ export const getAllMembers = async (adminRole) => {
       throw new Error("로그인이 필요합니다. 토큰이 없습니다.");
     }
 
-    const res = await axios.get(`${prefix}/list`, {
-      params: { adminRole: adminRole },
-    });
+    // 기본 파라미터
+    const params = { adminRole: adminRole };
+
+    // 검색 파라미터가 있으면 추가
+    if (searchParams && searchParams.keyword && searchParams.keyword.trim()) {
+      params.keyword = searchParams.keyword.trim();
+      params.searchType = searchParams.type || "all";
+    }
+
+    const res = await axios.get(`${prefix}/list`, { params });
 
     console.log("API 응답 상태:", res.status);
     console.log("API 응답 데이터:", res.data);

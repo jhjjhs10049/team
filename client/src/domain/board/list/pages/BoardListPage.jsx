@@ -6,12 +6,16 @@ import BoardSearchComponent from "../components/BoardSearchComponent";
 import BoardListComponent from "../components/BoardListComponent";
 import BoardPaginationComponent from "../components/BoardPaginationComponent";
 import { LoginRequiredButton } from "../../../../common/config/BoardProtectedAdmin";
+import { BOARD_CONFIG, PAGE_UTILS } from "../../../../common/config/pageConfig";
 
 export default function BoardListPage() {
   const navigate = useNavigate();
 
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useState({
+    keyword: "",
+    type: "all",
+  }); // 검색 파라미터를 객체로 관리
+  const [page, setPage] = useState(BOARD_CONFIG.DEFAULT_PAGE);
 
   const [data, setData] = useState({
     content: [],
@@ -31,11 +35,17 @@ export default function BoardListPage() {
     const fetchList = async () => {
       try {
         setLoading(true);
-        const res = await listBoards(q, page, 10);
+        const validPage = PAGE_UTILS.validatePage(page, 0); // totalPages 의존성 제거
+        const validSize = PAGE_UTILS.validateSize(
+          BOARD_CONFIG.DEFAULT_SIZE,
+          BOARD_CONFIG.MAX_SIZE
+        );
+
+        const res = await listBoards(searchParams, validPage, validSize);
         const normalized = {
           content: Array.isArray(res?.content) ? res.content : [],
           totalPages: typeof res?.totalPages === "number" ? res.totalPages : 0,
-          number: typeof res?.number === "number" ? res.number : page,
+          number: typeof res?.number === "number" ? res.number : validPage,
         };
         if (!cancelled) setData(normalized);
       } catch (err) {
@@ -50,15 +60,16 @@ export default function BoardListPage() {
     return () => {
       cancelled = true;
     };
-  }, [q, page]);
+  }, [searchParams, page]); // searchParams로 변경
 
-  const handleSearch = (searchQuery) => {
-    setPage(0);
-    setQ(searchQuery);
+  const handleSearch = (searchData) => {
+    setPage(BOARD_CONFIG.DEFAULT_PAGE); // 검색 시 첫 페이지로
+    setSearchParams(searchData);
   };
 
   const handlePageChange = (newPage) => {
-    setPage(newPage);
+    const validPage = PAGE_UTILS.validatePage(newPage, data.totalPages);
+    setPage(validPage);
   };
 
   const items = Array.isArray(data?.content) ? data.content : [];
@@ -67,7 +78,6 @@ export default function BoardListPage() {
   return (
     <BasicLayout>
       <div className="max-w-4xl mx-auto p-6">
-        {" "}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">게시판</h1>
           <LoginRequiredButton
@@ -84,6 +94,7 @@ export default function BoardListPage() {
           currentPage={page}
           totalPages={totalPages}
           onPageChange={handlePageChange}
+          pageConfig={BOARD_CONFIG}
         />
       </div>
     </BasicLayout>

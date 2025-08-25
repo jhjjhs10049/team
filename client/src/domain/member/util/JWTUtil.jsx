@@ -32,10 +32,8 @@ import { API_SERVER_HOST } from "../../global/api/axios.jsx";
 const jwtAxios = axios.create();
 
 const refreshJWT = async (accessToken, refreshToken) => {
-  // beforeRes() 에서 응답 데이터가 'ERROR_ACCESS_TOKEN' 와 같이
-  // Access Token 관련 메세지인 경우 Refresh Token 을 활용해서 다시 호출 합니다.
+  // Access Token이 만료된 경우 Refresh Token을 활용해서 새로운 토큰 요청
   const host = API_SERVER_HOST;
-
   const header = { headers: { Authorization: `Bearer ${accessToken}` } };
 
   const res = await axios.get(
@@ -43,98 +41,71 @@ const refreshJWT = async (accessToken, refreshToken) => {
     header
   );
 
-  console.log("----------------------");
-  console.log(res.data);
-
   return res.data;
 };
 
 //before request
 const beforeReq = (config) => {
-  console.log("before request......");
+  console.log("=== JWT 인터셉터: 요청 전 처리 ===");
+  console.log("요청 URL:", config.url);
+  console.log("요청 메소드:", config.method);
 
   const memberInfo = getCookie("member");
 
   if (!memberInfo) {
-    //쿠키가 없다면
-    console.log("Member Not FOUND");
-    return Promise.reject(
-      //Promise.reject 를 사용해서 에러를 강제로 던지고 requestFail(err) 를 호출한다.
-      {
-        response: { data: { error: "REQUIRE_LOGIN" } },
-      }
-    );
+    console.error("JWT 인터셉터: 쿠키에 member 정보가 없음");
+    return Promise.reject({
+      response: { data: { error: "REQUIRE_LOGIN" } },
+    });
   }
 
-  // 쿠키가 있다면 memberInfo 객체안에 있는 accessToken 을 꺼내서 저장
+  console.log("JWT 인터셉터: 쿠키에서 토큰 정보 확인됨");
   const { accessToken } = memberInfo;
-
-  // Authorization 헤더 처리
   config.headers.Authorization = `Bearer ${accessToken}`;
+  console.log("JWT 인터셉터: Authorization 헤더 설정 완료");
 
   return config;
 };
 
 //fail request
 const requestFail = (err) => {
-  //beforeReq에서 exception을 던지거나 Promise.reject(error)를 반환할 경우 호출됩니다 .
-
-  console.log("request error.......");
-
-  return Promise.reject(err); // 네트워크 단계로 전송 되지 않고 오류로 처리된다.
+  return Promise.reject(err);
 };
 
-//before return response (서버로 부터 JWT 관련 응답을 res 로 받은후 )
+//before return response
 const beforeRes = async (res) => {
-  console.log("before return response..........");
-  console.log(res); //ERROR_ACCESS_TOKEN
   const data = res.data;
   if (data && data.error === "ERROR_ACCESS_TOKEN") {
-    // 만료된 토큰을 사용 했을 경우
-
     const memberCookieValue = getCookie("member");
-    console.log("memberCookieValue:", memberCookieValue);
-    console.log("accessToken:", memberCookieValue?.accessToken);
-    console.log("refreshToken:", memberCookieValue?.refreshToken);
 
-    // accessToken 와 refreshToken 을 서버로 전송해서 새로운 토큰을 받아온다.
+    // accessToken와 refreshToken을 서버로 전송해서 새로운 토큰을 받아온다.
     const result = await refreshJWT(
       memberCookieValue.accessToken,
       memberCookieValue.refreshToken
     );
-    console.log("refreshJWT RESULT", result);
 
     memberCookieValue.accessToken = result.accessToken;
     memberCookieValue.refreshToken = result.refreshToken;
 
-    //JSON.stringify : 자바스크립트 객체를 문자열형태(JSON) 로 만든다.
     setCookie("member", JSON.stringify(memberCookieValue), 1);
 
-    //원래의 호출(getOne, getList)
-    const originalResult = res.config; //응답 객체(res)에 포함된 원래 요청 설정(config) 을 참조한다.
-
+    // 원래의 호출을 새로운 토큰으로 재시도
+    const originalResult = res.config;
     originalResult.headers.Authorization = `Bearer ${result.accessToken}`;
 
-    // 서버로 부터 새로 발급받은 accessToken과 원래 요청(getOne, getList) 을 서버에 요청한다.
-    return await axios(originalResult); // axios 뒤에 get/post가 없는데 어떤 방식의 호출일까?
-    // 원래 요청이 GET 방식 이었다면 res.config.method가 "get"으로 남아 있습니다. post 였다면 post가 남아 있습니다.
-    // 만약 method 설정이 빠져 있다면 Axios는 기본으로 GET 방식으로 요청합니다.
+    return await axios(originalResult);
   }
 
   return res;
 };
 
-//fail response                 //서버가 status 코드 기반 오류를 반환한 경우 responseFail 을 호출 합니다.(HTTP 오류 (401, 500 등))
+//fail response
 const responseFail = (err) => {
-  //beforeRes에서 exception을 던지거나 Promise.reject(error)를 반환할 경우 호출됩니다 .
-  console.log("response fail error........");
-
-  return Promise.reject(err); // err 에는 내부에 정의된 "Network Error" Request failed with status code 401" 같은 메시지를 갖게 됩니다.
+  return Promise.reject(err);
 };
 
-//인터셉터를 사용해서 JWT 관련 요청을 먼저 보낸다
-jwtAxios.interceptors.request.use(beforeReq, requestFail); // 정상 요청 경우 beforeRes(res) 호출, 오류 요청인 경우 responseFail(err) 호출
-//인터셉터를 사용해서 JWT 응답을 받는다. 이후에 실제 요청(getOne 등등..) 을 보낸다.
-jwtAxios.interceptors.response.use(beforeRes, responseFail); //정상 응답인 경우 beforeRes(res) 호출, 오류 응답인 경우 responseFail(err) 호출
+//인터셉터를 사용해서 JWT 관련 요청과 응답을 처리
+jwtAxios.interceptors.request.use(beforeReq, requestFail);
+jwtAxios.interceptors.response.use(beforeRes, responseFail);
 
 export default jwtAxios;

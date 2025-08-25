@@ -2,9 +2,13 @@ import { useState } from "react";
 
 const BoardSearchComponent = ({ onSearch, loading }) => {
   const [queryInput, setQueryInput] = useState("");
+  const [searchType, setSearchType] = useState("all"); // 검색 타입 상태 추가
 
   const handleSearch = () => {
-    onSearch(queryInput.trim());
+    onSearch({
+      keyword: queryInput.trim(),
+      type: searchType,
+    });
   };
 
   const handleKeyPress = (e) => {
@@ -13,8 +17,30 @@ const BoardSearchComponent = ({ onSearch, loading }) => {
     }
   };
 
+  const searchOptions = [
+    { value: "all", label: "제목+내용" },
+    { value: "title", label: "제목" },
+    { value: "content", label: "내용" },
+    { value: "writer", label: "글쓴이" },
+  ];
+
   return (
     <div className="mb-6 flex gap-2">
+      {/* 검색 타입 선택 드롭다운 */}
+      <select
+        value={searchType}
+        onChange={(e) => setSearchType(e.target.value)}
+        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
+        disabled={loading}
+      >
+        {searchOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      {/* 검색어 입력 */}
       <input
         type="text"
         value={queryInput}
@@ -24,6 +50,8 @@ const BoardSearchComponent = ({ onSearch, loading }) => {
         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         disabled={loading}
       />
+
+      {/* 검색 버튼 */}
       <button
         onClick={handleSearch}
         disabled={loading}

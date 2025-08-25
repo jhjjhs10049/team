@@ -1,15 +1,19 @@
 import { useEffect } from "react";
 import useCustomLogin from "../../domain/member/login/hooks/useCustomLogin";
 
-// 로그인을 해야 사용할수 있는 기능들에 대한 변수들을 정리함
+/**
+ * 📋 로그인 보호 컴포넌트 목록
+ *
+ * 1. ProtectedComponent       - 로그인 필요한 컴포넌트 래퍼 (마이페이지, 게시글 작성 등)
+ * 2. ProtectedButton          - 로그인 필요한 버튼 (기능 실행 버튼)
+ * 3. ProtectedLink            - 로그인 필요한 링크 (마이페이지 링크 등)
+ */
+
+// ===== 1. 로그인 필요 컴포넌트 =====
 
 /**
- * 로그인이 필요한 컴포넌틀을 보호하는 컴포넌트
- *
- * 사용법:
- * <ProtectedComponent redirectMessage="이 기능은 로그인이 필요합니다.">
- *   <컴포넌트>
- * </ProtectedComponent>
+ * 1. 로그인이 필요한 컴포넌트 래퍼
+ * 주용도: 마이페이지, 게시글 작성 페이지 등 전체 보호
  */
 const ProtectedComponent = ({
   children,
@@ -29,24 +33,21 @@ const ProtectedComponent = ({
     return null;
   }
 
-  // 로그인된 경우 자식 컴포넌트 렌더링
   return children;
 };
 
+// ===== 2. 로그인 필요 버튼 =====
+
 /**
- * 로그인이 필요한 버튼을 보호하는 컴포넌트
- *
- * 사용법:
- * <ProtectedButton onClick={handleClick} redirectMessage="이 기능은 로그인이 필요합니다.">
- *   버튼 텍스트
- * </ProtectedButton>
+ * 2. 로그인이 필요한 버튼
+ * 주용도: 기능 실행 버튼 (좋아요, 북마크 등)
  */
 const ProtectedButton = ({
   children,
   onClick,
-  redirectMessage = "이 기능을 사용하시려면 로그인이 필요합니다.",
   className = "",
   disabled = false,
+  redirectMessage = "이 기능을 사용하시려면 로그인이 필요합니다.",
   ...props
 }) => {
   const { isLogin, moveToLogin } = useCustomLogin();
@@ -59,7 +60,6 @@ const ProtectedButton = ({
       return;
     }
 
-    // 로그인된 경우 원래 onClick 실행
     if (onClick) {
       onClick(e);
     }
@@ -77,19 +77,17 @@ const ProtectedButton = ({
   );
 };
 
+// ===== 3. 로그인 필요 링크 =====
+
 /**
- * 링크 클릭을 보호하는 컴포넌트
- *
- * 사용법:
- * <ProtectedLink to="/mypage" redirectMessage="마이페이지는 로그인이 필요합니다.">
- *   마이페이지
- * </ProtectedLink>
+ * 3. 로그인이 필요한 링크
+ * 주용도: 마이페이지 링크, 프로필 링크 등
  */
 const ProtectedLink = ({
   children,
   to,
-  redirectMessage = "이 페이지는 로그인이 필요합니다.",
   className = "",
+  redirectMessage = "이 페이지는 로그인이 필요합니다.",
   ...props
 }) => {
   const { isLogin, moveToLogin, moveToPath } = useCustomLogin();
@@ -103,7 +101,6 @@ const ProtectedLink = ({
       return;
     }
 
-    // 로그인된 경우 해당 경로로 이동
     moveToPath(to);
   };
 
@@ -114,5 +111,9 @@ const ProtectedLink = ({
   );
 };
 
-// 컴포넌트들을 export
-export { ProtectedComponent, ProtectedButton, ProtectedLink };
+// ===== Export =====
+export {
+  ProtectedComponent, // 1. 로그인 필요 페이지 래퍼
+  ProtectedButton, // 2. 로그인 필요 기능 버튼
+  ProtectedLink, // 3. 로그인 필요 링크
+};

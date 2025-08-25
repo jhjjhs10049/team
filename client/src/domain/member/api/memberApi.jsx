@@ -16,7 +16,11 @@ export const loginPost = async (loginParam) => {
   params.append("password", loginParam.pw);
   try {
     const res = await axios.post(`${host}/login`, params, header);
+    console.log("=== 로그인 응답 상세 로그 ===");
     console.log("memberApi loginPost response:", res.data);
+    console.log("accessToken:", res.data.accessToken);
+    console.log("refreshToken:", res.data.refreshToken);
+    console.log("전체 응답 구조:", JSON.stringify(res.data, null, 2));
     return res.data;
   } catch (error) {
     // 403 에러이고 정지된 회원인 경우
@@ -69,7 +73,7 @@ export const checkEmail = async (email) => {
 };
 
 export const getMyPage = async (email) => {
-  const res = await axios.get(
+  const res = await jwtAxios.get(
     `${host}/mypage?email=${encodeURIComponent(email)}`
   );
   return res.data;
@@ -77,7 +81,7 @@ export const getMyPage = async (email) => {
 
 export const updateMyPage = async (memberData) => {
   const header = { headers: { "Content-Type": "application/json" } };
-  const res = await axios.put(`${host}/mypage`, memberData, header);
+  const res = await jwtAxios.put(`${host}/mypage`, memberData, header);
   return res.data;
 };
 

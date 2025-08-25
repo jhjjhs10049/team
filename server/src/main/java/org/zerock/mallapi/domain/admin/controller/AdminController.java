@@ -3,6 +3,7 @@ package org.zerock.mallapi.domain.admin.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.zerock.mallapi.domain.admin.dto.AdminMemberDTO;
 import org.zerock.mallapi.domain.admin.dto.BanRequestDTO;
@@ -19,15 +20,18 @@ import java.util.Map;
 @RequestMapping("/api/admin/member")
 public class AdminController {
       private final AdminService adminService;
-    
-    // 회원 목록 조회
+      // 회원 목록 조회
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @GetMapping("/list")
-    public ResponseEntity<?> getAllMembers(@RequestParam String adminRole) {
+    public ResponseEntity<?> getAllMembers(
+            @RequestParam String adminRole,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String searchType) {
         try {
-            log.info("회원 목록 조회 요청: adminRole = {}", adminRole);
+            log.info("회원 목록 조회 요청: adminRole = {}, keyword = {}, searchType = {}", adminRole, keyword, searchType);
             
             MemberRole role = MemberRole.valueOf(adminRole.toUpperCase());
-            List<AdminMemberDTO> members = adminService.getAllMembers(role);
+            List<AdminMemberDTO> members = adminService.getAllMembers(role, keyword, searchType);
             
             log.info("회원 목록 조회 완료: {} 건", members.size());
             return ResponseEntity.ok(members);
@@ -52,6 +56,7 @@ public class AdminController {
     }
     
     // 회원 정지
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @PostMapping("/ban")
     public ResponseEntity<?> banMember(@RequestBody BanRequestDTO banRequest) {
         try {
@@ -76,6 +81,7 @@ public class AdminController {
         }
     }
       // 회원 정지 해제
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @PostMapping("/unban")
     public ResponseEntity<?> unbanMember(@RequestParam Long memberNo, @RequestParam String adminRoleCode) {
         try {
@@ -97,6 +103,7 @@ public class AdminController {
     }
     
     // 계정 복구
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @PostMapping("/restore")
     public ResponseEntity<?> restoreMember(@RequestParam Long memberNo) {
         try {
@@ -116,8 +123,8 @@ public class AdminController {
                 .body(Map.of("message", "계정 복구 중 오류가 발생했습니다."));
         }
     }
-    
-    // 회원 권한 변경 (ADMIN만 가능)
+      // 회원 권한 변경 (ADMIN만 가능)
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change-role")
     public ResponseEntity<?> changeMemberRole(@RequestParam Long memberNo, @RequestParam String newRole) {
         try {
@@ -140,10 +147,10 @@ public class AdminController {
             log.error("회원 권한 변경 오류: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "회원 권한 변경 중 오류가 발생했습니다."));
-        }
-    }
+        }    }
     
     // 회원 정지 내역 조회
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @GetMapping("/ban-history/{memberNo}")
     public ResponseEntity<?> getBanHistory(@PathVariable Long memberNo) {
         try {
@@ -158,10 +165,10 @@ public class AdminController {
             log.error("정지 내역 조회 오류: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "정지 내역 조회 중 오류가 발생했습니다."));
-        }
-    }
+        }    }
     
     // 현재 정지된 회원 목록 조회
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @GetMapping("/banned")
     public ResponseEntity<?> getCurrentlyBannedMembers() {
         try {
@@ -176,10 +183,10 @@ public class AdminController {
             log.error("정지된 회원 목록 조회 오류: ", e);
             return ResponseEntity.badRequest()
                 .body(Map.of("message", "정지된 회원 목록 조회 중 오류가 발생했습니다."));
-        }
-    }
+        }    }
     
     // 관리자 조치 내역 조회
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @GetMapping("/admin-actions/{adminId}")
     public ResponseEntity<?> getAdminActions(@PathVariable Long adminId) {
         try {

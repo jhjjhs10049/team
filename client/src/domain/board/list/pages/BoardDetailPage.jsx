@@ -6,27 +6,43 @@ import {
   getBoardDetail,
   deleteBoard,
   imageUrl,
+  getReplies,
   addReply,
   updateReply,
   deleteReply,
 } from "../../api/boardApi";
-import BoardReplyComponent from "../components/BoardReplyComponent";
+import BoardReplyPaginationComponent from "../components/BoardReplyPaginationComponent";
+import { REPLY_CONFIG } from "../../../../common/config/pageConfig";
 import {
   AuthorOrAdminButton,
-  AuthorOrAdminLink,
+  AuthorOnlyLink,
 } from "../../../../common/config/BoardProtectedAdmin";
 
 export default function BoardDetail() {
   const { bno } = useParams();
   const navigate = useNavigate();
   const loginState = useSelector((state) => state.loginSlice);
-  const myEmail = loginState?.email || null;
-  const isAdmin = Array.isArray(loginState?.roleNames)
-    ? loginState.roleNames.includes("ADMIN")
-    : loginState?.role === "ADMIN";
+  // 디버깅: 로그인 상태 확인
+  console.log("=== BoardDetailPage 로그인 상태 ===");
+  console.log("loginState:", loginState);
+  console.log("loginState.email:", loginState?.email);
+  console.log("loginState.memberNo:", loginState?.memberNo);
 
+  const myEmail = loginState?.email || null;
+  const myMemberNo = loginState?.memberNo || null;
+  const isAdmin = Array.isArray(loginState?.roleNames)
+    ? loginState.roleNames.includes("ADMIN") ||
+      loginState.roleNames.includes("MANAGER")
+    : loginState?.role === "ADMIN" || loginState?.role === "MANAGER";
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // 댓글 페이징 상태
+  const [replyData, setReplyData] = useState(null);
+  const [currentReplyPage, setCurrentReplyPage] = useState(
+    REPLY_CONFIG.DEFAULT_PAGE
+  );
+  const [replyLoading, setReplyLoading] = useState(false);
   const loadDetail = useCallback(async () => {
     try {
       setLoading(true);
@@ -41,9 +57,26 @@ export default function BoardDetail() {
     }
   }, [bno, navigate]);
 
+  // 댓글 로딩 함수
+  const loadReplies = useCallback(
+    async (page = currentReplyPage) => {
+      try {
+        setReplyLoading(true);
+        const data = await getReplies(bno, page, REPLY_CONFIG.DEFAULT_SIZE);
+        setReplyData(data);
+      } catch (error) {
+        console.error("댓글 로딩 실패:", error);
+      } finally {
+        setReplyLoading(false);
+      }
+    },
+    [bno, currentReplyPage]
+  );
   useEffect(() => {
     loadDetail();
-  }, [loadDetail]);
+    loadReplies();
+  }, [loadDetail, loadReplies]);
+
   const handleDeleteBoard = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
 
@@ -75,24 +108,93 @@ export default function BoardDetail() {
   };
   // 댓글 관련 핸들러
   const handleAddReply = async (replyText) => {
-    await addReply(bno, replyText);
-    await loadDetail();
+    try {
+      await addReply(bno, replyText);
+      await loadReplies(0); // 첫 페이지로 이동
+      setCurrentReplyPage(0);
+    } catch (error) {
+      console.error("댓글 작성 실패:", error);
+
+      // JWT 토큰 관련 에러인 경우
+      if (
+        error.response?.status === 401 ||
+        error.message?.includes("Authorization") ||
+        error.response?.data?.error === "REQUIRE_LOGIN"
+      ) {
+        alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+        navigate("/member/login");
+        return;
+      }
+
+      // 권한 부족인 경우
+      if (error.response?.status === 403) {
+        alert("댓글 작성 권한이 없습니다.");
+        return;
+      }
+
+      alert("댓글 작성에 실패했습니다.");
+    }
   };
 
   const handleUpdateReply = async (replyId, replyText) => {
-    await updateReply(bno, replyId, replyText);
-    await loadDetail();
-  };
+    try {
+      await updateReply(bno, replyId, replyText);
+      await loadReplies(); // 현재 페이지 유지
+    } catch (error) {
+      console.error("댓글 수정 실패:", error);
 
+      // JWT 토큰 관련 에러인 경우
+      if (
+        error.response?.status === 401 ||
+        error.message?.includes("Authorization") ||
+        error.response?.data?.error === "REQUIRE_LOGIN"
+      ) {
+        alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+        navigate("/member/login");
+        return;
+      }
+
+      // 권한 부족인 경우
+      if (error.response?.status === 403) {
+        alert("댓글 수정 권한이 없습니다.");
+        return;
+      }
+
+      alert("댓글 수정에 실패했습니다.");
+    }
+  };
   const handleDeleteReply = async (replyId) => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
       await deleteReply(bno, replyId);
-      await loadDetail();
+      await loadReplies(); // 현재 페이지 유지
     } catch (error) {
       console.error("댓글 삭제 실패:", error);
+
+      // JWT 토큰 관련 에러인 경우
+      if (
+        error.response?.status === 401 ||
+        error.message?.includes("Authorization") ||
+        error.response?.data?.error === "REQUIRE_LOGIN"
+      ) {
+        alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+        navigate("/member/login");
+        return;
+      }
+
+      // 권한 부족인 경우
+      if (error.response?.status === 403) {
+        alert("댓글 삭제 권한이 없습니다.");
+        return;
+      }
+
       alert("댓글 삭제에 실패했습니다.");
     }
+  };
+
+  const handleReplyPageChange = async (page) => {
+    setCurrentReplyPage(page);
+    await loadReplies(page);
   };
 
   if (loading) {
@@ -122,17 +224,17 @@ export default function BoardDetail() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           {" "}
           <div className="flex justify-between items-start mb-4">
-            <h1 className="text-3xl font-bold text-gray-800">{detail.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{detail.title}</h1>{" "}
             <div className="flex gap-2">
-              <AuthorOrAdminLink
+              <AuthorOnlyLink
                 authorEmail={detail.writerEmail}
                 to={`/board/modify/${detail.bno}`}
                 className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                 noAuthMessage="게시글 수정은 로그인이 필요합니다."
-                noPermissionMessage="작성자 또는 관리자만 수정할 수 있습니다."
+                noPermissionMessage="작성자만 수정할 수 있습니다."
               >
                 수정
-              </AuthorOrAdminLink>
+              </AuthorOnlyLink>
               <AuthorOrAdminButton
                 authorEmail={detail.writerEmail}
                 onClick={handleDeleteBoard}
@@ -171,19 +273,20 @@ export default function BoardDetail() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* 댓글 */}
-        <BoardReplyComponent
-          replies={detail.replies || []}
+        </div>{" "}
+        {/* 댓글 */}{" "}
+        <BoardReplyPaginationComponent
+          replyData={replyData}
+          currentPage={currentReplyPage}
           myEmail={myEmail}
+          myMemberNo={myMemberNo}
           isAdmin={isAdmin}
           onAddReply={handleAddReply}
           onUpdateReply={handleUpdateReply}
           onDeleteReply={handleDeleteReply}
-          loading={loading}
+          onPageChange={handleReplyPageChange}
+          loading={replyLoading}
         />
-
         {/* 하단 버튼 */}
         <div className="flex justify-center mt-8">
           <Link

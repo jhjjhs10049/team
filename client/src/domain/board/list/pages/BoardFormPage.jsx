@@ -8,6 +8,8 @@ import {
   uploadImages,
 } from "../../api/boardApi";
 import BoardFormComponent from "../components/BoardFormComponent";
+import { AuthorOnlyComponent } from "../../../../common/config/BoardProtectedAdmin";
+import { getCookie } from "../../../member/util/cookieUtil";
 
 export default function BoardFormPage() {
   const navigate = useNavigate();
@@ -19,17 +21,37 @@ export default function BoardFormPage() {
   const [existingFiles, setExistingFiles] = useState([]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [authorEmail, setAuthorEmail] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // 로그인 상태 확인
   useEffect(() => {
-    if (!editing) return;
+    const memberInfo = getCookie("member");
+    if (!memberInfo) {
+      console.log("❌ 로그인되지 않음 - /member/login으로 리다이렉트");
+      alert("로그인이 필요합니다.");
+      navigate("/member/login");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!editing) {
+      setDataLoaded(true);
+      return;
+    }
+
     const loadDetail = async () => {
       try {
         const detail = await getBoardDetail(bno);
         setTitle(detail?.title ?? "");
         setContent(detail?.content ?? "");
+        setAuthorEmail(detail?.writerEmail ?? "");
+
         const prev = Array.isArray(detail?.images)
           ? detail.images.map((i) => i.fileName)
           : [];
         setExistingFiles(prev);
+        setDataLoaded(true); // 데이터 로드 완료
       } catch (err) {
         console.error(err);
         alert("게시글 정보를 불러오지 못했습니다.");
@@ -38,7 +60,6 @@ export default function BoardFormPage() {
     };
     loadDetail();
   }, [editing, bno, navigate]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) return alert("제목을 입력하세요.");
@@ -46,11 +67,24 @@ export default function BoardFormPage() {
 
     try {
       setLoading(true);
-      let imageFileNames = existingFiles;
 
-      if (files.length > 0) {
-        imageFileNames = await uploadImages(files);
+      // 이미지 처리
+      let imageFileNames = [];
+
+      if (editing) {
+        // 수정 시: 기존 파일 + 새 파일
+        imageFileNames = [...existingFiles];
+        if (files.length > 0) {
+          const newImageNames = await uploadImages(files);
+          imageFileNames = [...imageFileNames, ...newImageNames];
+        }
+      } else {
+        // 새 글 작성 시: 새 파일만
+        if (files.length > 0) {
+          imageFileNames = await uploadImages(files);
+        }
       }
+
       if (editing) {
         await updateBoard({
           boardId: bno,
@@ -72,28 +106,67 @@ export default function BoardFormPage() {
       setLoading(false);
     }
   };
+  // 새 글 작성인 경우 바로 렌더링
+  if (!editing) {
+    return (
+      <BasicLayout>
+        <div className="max-w-4xl mx-auto p-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">글 쓰기</h1>
+          <BoardFormComponent
+            title={title}
+            setTitle={setTitle}
+            content={content}
+            setContent={setContent}
+            existingFiles={existingFiles}
+            setExistingFiles={setExistingFiles}
+            files={files}
+            setFiles={setFiles}
+            onSubmit={handleSubmit}
+            editing={editing}
+            loading={loading}
+          />
+        </div>
+      </BasicLayout>
+    );
+  }
 
+  // 수정인 경우 - 데이터 로드 완료 후에만 권한 체크
+  if (!dataLoaded) {
+    return (
+      <BasicLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-500">로딩 중...</div>
+        </div>
+      </BasicLayout>
+    );
+  }
+
+  // 수정인 경우 작성자만 접근 가능
   return (
-    <BasicLayout>
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          {editing ? "글 수정" : "글 쓰기"}
-        </h1>
-
-        <BoardFormComponent
-          title={title}
-          setTitle={setTitle}
-          content={content}
-          setContent={setContent}
-          existingFiles={existingFiles}
-          setExistingFiles={setExistingFiles}
-          files={files}
-          setFiles={setFiles}
-          onSubmit={handleSubmit}
-          editing={editing}
-          loading={loading}
-        />
-      </div>
-    </BasicLayout>
+    <AuthorOnlyComponent
+      authorEmail={authorEmail}
+      redirectOnNoAuth={true}
+      noAuthMessage="로그인이 필요합니다."
+      noPermissionMessage="작성자만 수정할 수 있습니다."
+    >
+      <BasicLayout>
+        <div className="max-w-4xl mx-auto p-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">글 수정</h1>
+          <BoardFormComponent
+            title={title}
+            setTitle={setTitle}
+            content={content}
+            setContent={setContent}
+            existingFiles={existingFiles}
+            setExistingFiles={setExistingFiles}
+            files={files}
+            setFiles={setFiles}
+            onSubmit={handleSubmit}
+            editing={editing}
+            loading={loading}
+          />
+        </div>
+      </BasicLayout>
+    </AuthorOnlyComponent>
   );
 }
